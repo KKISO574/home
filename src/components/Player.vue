@@ -1,288 +1,452 @@
 <template>
   <APlayer
-    v-if="playList[0]"
+    v-if="playList.length"
     ref="player"
     :audio="playList"
-    :autoplay="store.playerAutoplay"
+    :autoplay="audio.autoplay"
     :theme="theme"
     :autoSwitch="false"
-    :loop="store.playerLoop"
-    :order="store.playerOrder"
+    :loop="audio.loop"
+    :order="audio.order"
     :volume="volume"
-    :showLrc="true"
+    :showLrc="false"
     :listFolded="listFolded"
     :listMaxHeight="listMaxHeight"
     :noticeSwitch="false"
     @play="onPlay"
     @pause="onPause"
     @timeupdate="onTimeUp"
+    @progress="syncTimeline"
+    @durationchange="syncTimeline"
+    @loadedmetadata="syncTimeline"
+    @canplay="syncTimeline"
+    @listswitch="onListSwitch"
     @error="loadMusicError"
   />
+  <div v-else class="player-placeholder">正在装载歌单…</div>
 </template>
 
 <script setup>
-import { MusicOne, PlayWrong } from "@icon-park/vue-next";
+import { h, onMounted, ref, watch } from "vue";
+import { PlayWrong } from "@icon-park/vue-next";
+import APlayer from "@worstone/vue-aplayer";
 import { getPlayerList } from "@/api";
 import { mainStore } from "@/store";
-import APlayer from "@worstone/vue-aplayer";
 
-const store = mainStore();
-
-// 获取播放器 DOM
+const audio = mainStore();
 const player = ref(null);
-
-// 歌曲播放列表
 const playList = ref([]);
-
-// 歌曲播放项
 const playIndex = ref(0);
 
-// 配置项
 const props = defineProps({
-  // 主题色
   theme: {
     type: String,
-    default: "#efefef",
+    default: "#66e7d8",
   },
-  // 默认音量
   volume: {
     type: Number,
-    default: 0.7,
-    validator: (value) => {
-      return value >= 0 && value <= 1;
-    },
+    default: 0.72,
   },
-  // 歌曲服务器 ( netease-网易云, tencent-qq音乐 )
   songServer: {
     type: String,
-    default: "netease", //'netease' | 'tencent'
+    default: "netease",
   },
-  // 播放类型 ( song-歌曲, playlist-播放列表, album-专辑, search-搜索, artist-艺术家 )
   songType: {
     type: String,
     default: "playlist",
   },
-  // id
   songId: {
     type: String,
-    default: "7452421335",
+    default: "",
   },
-  // 列表是否默认折叠
   listFolded: {
     type: Boolean,
-    default: false,
+    default: true,
   },
-  // 列表最大高度
   listMaxHeight: {
     type: Number,
-    default: 420,
+    default: 260,
   },
 });
 
-const listHeight = computed(() => {
-  return props.listMaxHeight + "px";
-});
+const listHeight = computed(() => `${props.listMaxHeight}px`);
 
-// 初始化播放器
-onMounted(() => {
-  nextTick(() => {
-    try {
-      getPlayerList(props.songServer, props.songType, props.songId).then((res) => {
-        console.log(res);
-        // 更改播放器加载状态
-        store.musicIsOk = true;
-        // 生成歌单
-        playList.value = res;
-        console.log("音乐加载完成");
-        console.log(playList.value);
-        console.log(playIndex.value, playList.value.length, props.volume);
-      });
-    } catch (err) {
-      console.error(err);
-      store.musicIsOk = false;
-      ElMessage({
-        message: "播放器加载失败",
-        grouping: true,
-        icon: h(PlayWrong, {
-          theme: "filled",
-          fill: "#efefef",
-        }),
-      });
+const loadPlaylist = async () => {
+  try {
+    const result = await getPlayerList(props.songServer, props.songType, props.songId);
+    if (!Array.isArray(result) || !result.length) {
+      throw new Error("歌单为空");
     }
-  });
-});
+    playList.value = result;
+    audio.setReady(true);
+    audio.setPlaylist(result);
+    audio.setCurrentIndex(0);
+    audio.resetTimeline();
+    if (result[0]) {
+      audio.setTrack(result[0], 0);
+      audio.setLyric("选择一首开始播放");
+    }
+  } catch (error) {
+    console.error("播放器加载失败:", error);
+    audio.setReady(false);
+    audio.setPlaylist([]);
+    audio.resetTimeline();
+    ElMessage({
+      message: "播放器加载失败",
+      grouping: true,
+      icon: h(PlayWrong, {
+        theme: "filled",
+        fill: "#efefef",
+      }),
+    });
+  }
+};
 
-// 播放
+const syncTimeline = () => {
+  if (!player.value) return;
+  audio.setTimeline({
+    currentTime: player.value.audioStatus?.playedTime || 0,
+    duration: player.value.audioStatus?.duration || 0,
+    loadedTime: player.value.audioStatus?.loadedTime || 0,
+  });
+};
+
+const onListSwitch = (index) => {
+  if (typeof index !== "number" || !playList.value[index]) return;
+  playIndex.value = index;
+  audio.setTrack(playList.value[index], index);
+  audio.setLyric("歌词加载中");
+  audio.resetTimeline();
+};
+
 const onPlay = () => {
-  console.log("播放");
+  if (!player.value) return;
   playIndex.value = player.value.aplayer.index;
-  // 播放状态
-  store.setPlayerState(player.value.audioRef.paused);
-  // 储存播放器信息
-  store.setPlayerData(playList.value[playIndex.value].name, playList.value[playIndex.value].artist);
+  audio.setPlayback(true);
+  audio.setTrack(playList.value[playIndex.value], playIndex.value);
+  syncTimeline();
+};
+
+const onPause = () => {
+  audio.setPlayback(false);
+  syncTimeline();
+};
+
+const onTimeUp = () => {
+  if (!player.value) return;
+  const lyrics = player.value.aplayer.lyrics[playIndex.value];
+  const lyricIndex = player.value.aplayer.lyricIndex;
+  if (!lyrics || !lyrics[lyricIndex]) return;
+
+  let lyricText = lyrics[lyricIndex][1];
+  if (lyricText === "Loading") lyricText = "歌词加载中";
+  if (lyricText === "Not available") lyricText = "歌词加载失败";
+  audio.setLyric(lyricText);
+  syncTimeline();
+};
+
+const playToggle = () => {
+  player.value?.toggle();
+};
+
+const changeVolume = (value) => {
+  player.value?.setVolume(value, false);
+};
+
+const changeSong = (direction) => {
+  if (!player.value) return;
+  direction === 0 ? player.value.skipBack() : player.value.skipForward();
+  nextTick(() => {
+    player.value?.play();
+  });
+};
+
+const seekTo = (value) => {
+  if (!player.value) return;
+  player.value.seek(value);
+  syncTimeline();
+};
+
+const playTrack = (index) => {
+  if (!player.value || typeof index !== "number") return;
+  player.value.switchList(index);
+  nextTick(() => {
+    player.value?.play();
+  });
+};
+
+const toggleList = () => {
+  player.value?.toggleList();
+};
+
+const loadMusicError = () => {
+  const notice =
+    playList.value.length > 1 ? "播放出错，播放器将在下一曲继续尝试" : "播放歌曲出现错误";
   ElMessage({
-    message: store.getPlayerData.name + " - " + store.getPlayerData.artist,
+    message: notice,
     grouping: true,
-    icon: h(MusicOne, {
+    icon: h(PlayWrong, {
       theme: "filled",
       fill: "#efefef",
     }),
   });
 };
 
-// 暂停
-const onPause = () => {
-  store.setPlayerState(player.value.audioRef.paused);
-};
+watch(
+  () => props.volume,
+  (value) => {
+    if (typeof value === "number") {
+      changeVolume(value);
+    }
+  },
+);
 
-// 音频时间更新事件
-const onTimeUp = () => {
-  let lyrics = player.value.aplayer.lyrics[playIndex.value];
-  let lyricIndex = player.value.aplayer.lyricIndex;
-  if (!lyrics || !lyrics[lyricIndex]) {
-    return;
-  }
-  let lrc = lyrics[lyricIndex][1];
-  if (lrc === "Loading") {
-    lrc = "歌词加载中";
-  } else if (lrc === "Not available") {
-    lrc = "歌词加载失败";
-  }
-  store.setPlayerLrc(lrc);
-};
+onMounted(() => {
+  loadPlaylist();
+});
 
-// 切换播放暂停事件
-const playToggle = () => {
-  player.value.toggle();
-};
-
-// 切换音量事件
-const changeVolume = (value) => {
-  player.value.setVolume(value, false);
-};
-
-// 切换上下曲
-const changeSong = (type) => {
-  type === 0 ? player.value.skipBack() : player.value.skipForward();
-  nextTick(() => {
-    player.value.play();
-  });
-};
-
-// 切换歌曲列表状态
-const toggleList = () => {
-  player.value.toggleList();
-};
-
-// 加载音频错误
-const loadMusicError = () => {
-  let notice = "";
-  if (playList.value.length > 1) {
-    notice = "播放歌曲出现错误，播放器将在 2s 后进行下一首";
-  } else {
-    notice = "播放歌曲出现错误";
-  }
-  ElMessage({
-    message: notice,
-    grouping: true,
-    icon: h(PlayWrong, {
-      theme: "filled",
-      fill: "#EFEFEF",
-      duration: 2000,
-    }),
-  });
-  console.error(
-    "播放歌曲: " + player.value.aplayer.audio[player.value.aplayer.index].name + " 出现错误",
-  );
-};
-
-// 暴露子组件方法
-defineExpose({ playToggle, changeVolume, changeSong, toggleList });
+defineExpose({ playToggle, changeVolume, changeSong, toggleList, seekTo, playTrack });
 </script>
 
 <style lang="scss" scoped>
+.player-placeholder {
+  padding: 18px;
+  border-radius: 8px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0.02)),
+    rgb(17 23 34 / 0.72);
+  color: var(--text-soft);
+}
+
 .aplayer {
-  width: 80%;
-  border-radius: 6px;
-  font-family: "HarmonyOS_Regular", sans-serif !important;
+  margin: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.02)),
+    rgb(12 18 28 / 0.76);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.04),
+    0 20px 40px rgb(0 0 0 / 0.18);
+  font-family:
+    "HarmonyOS Sans SC",
+    "HarmonyOS Sans",
+    "PingFang SC",
+    "Microsoft YaHei",
+    sans-serif !important;
+}
+
+:deep(.aplayer-body) {
+  position: relative;
+  padding: 18px;
+  background:
+    radial-gradient(circle at top left, rgb(102 231 216 / 0.08), transparent 42%),
+    radial-gradient(circle at right center, rgb(245 185 113 / 0.08), transparent 30%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.02), transparent);
+}
+
+:deep(.aplayer-pic) {
+  width: 120px;
+  height: 120px;
+  margin: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  box-shadow:
+    0 18px 34px rgb(0 0 0 / 0.28),
+    inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+
+:deep(.aplayer-pic .aplayer-button) {
+  background: rgb(7 11 17 / 0.5);
+  border: 1px solid rgb(255 255 255 / 0.18);
+  backdrop-filter: blur(12px);
+}
+
+:deep(.aplayer-info) {
+  margin-left: 140px;
+  min-height: 120px;
+  border-bottom: none !important;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+:deep(.aplayer-info .aplayer-music) {
+  margin-bottom: 14px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+:deep(.aplayer-info .aplayer-title) {
+  color: var(--text-main);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+:deep(.aplayer-info .aplayer-author) {
+  color: var(--text-soft);
+}
+
+:deep(.aplayer-lrc) {
+  margin: 0 0 12px;
+  height: 46px;
+  text-align: left;
+}
+
+:deep(.aplayer-lrc p) {
+  color: var(--text-soft);
+  line-height: 1.45;
+}
+
+:deep(.aplayer-lrc .aplayer-lrc-current) {
+  color: var(--text-main);
+  font-size: 0.94rem;
+}
+
+:deep(.aplayer-controller) {
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  padding-top: 12px;
+}
+
+:deep(.aplayer-bar-wrap) {
+  padding: 0;
+}
+
+:deep(.aplayer-bar) {
+  height: 6px !important;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.08) !important;
+}
+
+:deep(.aplayer-loaded) {
+  background: rgb(255 255 255 / 0.12) !important;
+}
+
+:deep(.aplayer-played) {
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-amber)) !important;
+}
+
+:deep(.aplayer-thumb) {
+  width: 12px;
+  height: 12px;
+  background: var(--accent-cyan) !important;
+  box-shadow: 0 0 0 6px rgb(102 231 216 / 0.14);
+}
+
+:deep(.aplayer-list) {
+  margin-top: 10px;
+  padding: 10px;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.03), rgb(255 255 255 / 0.015)),
+    rgb(10 15 24 / 0.7);
+}
+
+:deep(.aplayer-list ol) {
+  height: v-bind(listHeight);
+  padding-right: 6px;
+}
+
+:deep(.aplayer-list ol::-webkit-scrollbar) {
+  width: 8px;
+}
+
+:deep(.aplayer-list ol::-webkit-scrollbar-track) {
+  background: transparent;
+}
+
+:deep(.aplayer-list ol::-webkit-scrollbar-thumb) {
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.14);
+}
+
+:deep(.aplayer-list li) {
+  position: relative;
+  min-height: 54px;
+  line-height: 54px;
+  margin-bottom: 8px;
+  padding-right: 14px;
+  border-top: none;
+  border-radius: 12px;
+  color: var(--text-soft);
+  background: transparent !important;
+  transition:
+    transform 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+:deep(.aplayer-list li::before) {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+:deep(.aplayer-list li:last-child) {
+  margin-bottom: 0;
+}
+
+:deep(.aplayer-list li:hover) {
+  background: rgb(255 255 255 / 0.04) !important;
+  transform: translateX(2px);
+}
+
+:deep(.aplayer-list li .aplayer-list-index),
+:deep(.aplayer-list li .aplayer-list-author) {
+  color: var(--text-soft);
+}
+
+:deep(.aplayer-list li .aplayer-list-title) {
+  color: rgb(220 233 255 / 0.92);
+}
+
+:deep(.aplayer-list li.aplayer-list-light) {
+  background:
+    linear-gradient(
+      90deg,
+      rgb(102 231 216 / 0.16),
+      rgb(102 231 216 / 0.04) 65%,
+      rgb(245 185 113 / 0.08)
+    ) !important;
+  box-shadow:
+    inset 0 0 0 1px rgb(102 231 216 / 0.18),
+    0 10px 28px rgb(0 0 0 / 0.22);
+}
+
+:deep(.aplayer-list li.aplayer-list-light::before) {
+  background: linear-gradient(180deg, var(--accent-cyan), var(--accent-amber));
+}
+
+:deep(.aplayer-list li.aplayer-list-light .aplayer-list-index),
+:deep(.aplayer-list li.aplayer-list-light .aplayer-list-title),
+:deep(.aplayer-list li.aplayer-list-light .aplayer-list-author) {
+  color: var(--text-main) !important;
+}
+
+@media (max-width: 720px) {
   :deep(.aplayer-body) {
-    background-color: transparent;
-    .aplayer-pic {
-      display: none;
-    }
-    .aplayer-info {
-      margin-left: 0;
-      background-color: #ffffff40;
-      border-color: transparent !important;
-      .aplayer-music {
-        flex-grow: initial;
-        margin-bottom: 2px;
-        overflow: initial;
-        .aplayer-title {
-          font-size: 16px;
-          margin-right: 6px;
-        }
-        .aplayer-author {
-          color: #efefef;
-        }
-      }
-      .aplayer-lrc {
-        text-align: left;
-        margin: 7px 0 6px 6px;
-        height: 44px;
-        mask: linear-gradient(
-          #fff 15%,
-          #fff 85%,
-          hsla(0deg, 0%, 100%, 0.6) 90%,
-          hsla(0deg, 0%, 100%, 0)
-        );
-        -webkit-mask: linear-gradient(
-          #fff 15%,
-          #fff 85%,
-          hsla(0deg, 0%, 100%, 0.6) 90%,
-          hsla(0deg, 0%, 100%, 0)
-        );
-        &::before,
-        &::after {
-          display: none;
-        }
-        p {
-          color: #efefef;
-        }
-        .aplayer-lrc-current {
-          font-size: 0.95rem;
-          margin-bottom: 4px !important;
-        }
-      }
-      .aplayer-controller {
-        display: none;
-      }
-    }
+    padding: 16px;
   }
-  :deep(.aplayer-list) {
-    margin-top: 6px;
-    height: v-bind(listHeight);
-    background-color: transparent;
-    ol {
-      &::-webkit-scrollbar-track {
-        background-color: transparent;
-      }
-      li {
-        border-color: transparent;
-        &.aplayer-list-light {
-          background: #ffffff40;
-          border-radius: 6px;
-        }
-        &:hover {
-          background: #ffffff26 !important;
-          border-radius: 6px !important;
-        }
-        .aplayer-list-index,
-        .aplayer-list-author {
-          color: #efefef;
-        }
-      }
-    }
+
+  :deep(.aplayer-pic) {
+    width: 96px;
+    height: 96px;
+  }
+
+  :deep(.aplayer-info) {
+    margin-left: 114px;
+    min-height: 96px;
   }
 }
 </style>

@@ -1,254 +1,166 @@
 <template>
-  <!-- 加载 -->
-  <Loading />
-  <!-- 壁纸 -->
-  <Background @loadComplete="loadComplete" />
-  <!-- 主界面 -->
-  <Transition name="fade" mode="out-in">
-    <main id="main" v-if="store.imgLoadStatus">
-      <div class="container" v-show="!store.backgroundShow">
-        <section class="all" v-show="!store.setOpenState">
-          <MainLeft />
-          <MainRight v-show="!store.boxOpenState" />
-          <Box v-show="store.boxOpenState" />
-        </section>
-        <section class="more" v-show="store.setOpenState" @click="store.setOpenState = false">
-          <MoreSet />
-        </section>
-      </div>
-      <!-- 移动端菜单按钮 -->
-      <Icon
-        class="menu"
-        size="24"
-        v-show="!store.backgroundShow"
-        @click="store.mobileOpenState = !store.mobileOpenState"
-      >
-        <component :is="store.mobileOpenState ? CloseSmall : HamburgerButton" />
-      </Icon>
-      <!-- 页脚 -->
-      <Transition name="fade" mode="out-in">
-        <Footer class="f-ter" v-show="!store.backgroundShow && !store.setOpenState" />
-      </Transition>
+  <div class="app-shell">
+    <AmbientBackdrop :image="ambientImage" />
+    <div class="app-grid" aria-hidden="true" />
+    <main class="page-flow">
+      <HeroSection
+        :site-name="siteName"
+        :site-author="siteAuthor"
+        :site-url="siteUrl"
+        :site-url-text="siteUrlText"
+        :site-logo="siteLogo"
+        :summary="heroSummary"
+        :date-line="dateLine"
+        :time-line="timeLine"
+        :weather-line="weatherLine"
+      />
+
+      <LiveOverview
+        :quote="quote"
+        :date-line="dateLine"
+        :time-line="timeLine"
+        :weather-line="weatherLine"
+        :capsule-list="capsuleList"
+        :site-age="siteAge"
+        @refresh-quote="refreshQuote"
+      />
+
+      <LinkSection />
+
+      <section id="media" class="section-shell media-shell">
+        <div class="container media-grid">
+          <MusicConsole :panel-height="matchedMediaHeight" />
+          <SocialSection
+            ref="socialSectionRef"
+            :site-name="siteName"
+            :site-author="siteAuthor"
+            :site-url="siteUrl"
+            :site-url-text="siteUrlText"
+            :site-logo="siteLogo"
+            :site-icp="siteIcp"
+            :site-age="siteAge"
+          />
+        </div>
+      </section>
+
+      <SiteFooter
+        :site-author="siteAuthor"
+        :site-url="siteUrl"
+        :site-url-text="siteUrlText"
+        :site-icp="siteIcp"
+      />
     </main>
-  </Transition>
+  </div>
 </template>
 
 <script setup>
-import { helloInit, checkDays } from "@/utils/getTime.js";
-import { HamburgerButton, CloseSmall } from "@icon-park/vue-next";
-import { mainStore } from "@/store";
-import { Icon } from "@vicons/utils";
-import Loading from "@/components/Loading.vue";
-import MainLeft from "@/views/Main/Left.vue";
-import MainRight from "@/views/Main/Right.vue";
-import Background from "@/components/Background.vue";
-import Footer from "@/components/Footer.vue";
-import Box from "@/views/Box/index.vue";
-import MoreSet from "@/views/MoreSet/index.vue";
-import cursorInit from "@/utils/cursor.js";
-import config from "@/../package.json";
+import AmbientBackdrop from "@/components/home/AmbientBackdrop.vue";
+import HeroSection from "@/components/home/HeroSection.vue";
+import LiveOverview from "@/components/home/LiveOverview.vue";
+import LinkSection from "@/components/home/LinkSection.vue";
+import MusicConsole from "@/components/home/MusicConsole.vue";
+import SocialSection from "@/components/home/SocialSection.vue";
+import SiteFooter from "@/components/home/SiteFooter.vue";
+import { useSiteMeta } from "@/composables/useSiteMeta.js";
+import { useClock } from "@/composables/useClock.js";
+import { useWeather } from "@/composables/useWeather.js";
+import { useHitokoto } from "@/composables/useHitokoto.js";
+import { useTimeCapsule } from "@/composables/useTimeCapsule.js";
+import { checkDays } from "@/utils/getTime.js";
 
-const store = mainStore();
+const meta = useSiteMeta();
+const { dateLine, timeLine, hourValue } = useClock();
+const { weatherLine } = useWeather();
+const { quote, refreshQuote } = useHitokoto();
+const { capsuleList, siteAge } = useTimeCapsule(meta.startDate.value);
+const { siteName, siteAuthor, siteUrl, siteUrlText, siteLogo, siteIcp, descriptionPrimary } = meta;
+const socialSectionRef = ref(null);
+const matchedMediaHeight = ref(null);
 
-// 页面宽度
-const getWidth = () => {
-  store.setInnerWidth(window.innerWidth);
+let socialObserver = null;
+
+const heroSummary = computed(() => {
+  const fragments = [descriptionPrimary.value, "记录近况、常用入口和联系方式。"].filter(Boolean);
+  return fragments.join(" ");
+});
+
+const ambientImage = computed(() => {
+  if (hourValue.value < 7) return "/images/background8.jpg";
+  if (hourValue.value < 12) return "/images/background4.jpg";
+  if (hourValue.value < 18) return "/images/background2.jpg";
+  return "/images/background10.jpg";
+});
+
+const updateMediaHeight = () => {
+  if (window.innerWidth <= 1080) {
+    matchedMediaHeight.value = null;
+    return;
+  }
+
+  const socialElement = socialSectionRef.value?.$el;
+  matchedMediaHeight.value = socialElement?.offsetHeight || null;
 };
-
-// 加载完成事件
-const loadComplete = () => {
-  nextTick(() => {
-    // 欢迎提示
-    helloInit();
-    // 默哀模式
-    checkDays();
-  });
-};
-
-// 监听宽度变化
-watch(
-  () => store.innerWidth,
-  (value) => {
-    if (value < 721) {
-      store.boxOpenState = false;
-      store.setOpenState = false;
-    }
-  },
-);
 
 onMounted(() => {
-  // 自定义鼠标
-  cursorInit();
+  checkDays();
+  nextTick(() => {
+    updateMediaHeight();
 
-  // 屏蔽右键
-  document.oncontextmenu = () => {
-    ElMessage({
-      message: "为了浏览体验，本站禁用右键",
-      grouping: true,
-      duration: 2000,
-    });
-    return false;
-  };
-
-  // 鼠标中键事件
-  window.addEventListener("mousedown", (event) => {
-    if (event.button == 1) {
-      store.backgroundShow = !store.backgroundShow;
-      ElMessage({
-        message: `已${store.backgroundShow ? "开启" : "退出"}壁纸展示状态`,
-        grouping: true,
+    const socialElement = socialSectionRef.value?.$el;
+    if (socialElement && typeof ResizeObserver !== "undefined") {
+      socialObserver = new ResizeObserver(() => {
+        updateMediaHeight();
       });
+      socialObserver.observe(socialElement);
     }
+
+    window.addEventListener("resize", updateMediaHeight);
   });
-
-  // 监听当前页面宽度
-  getWidth();
-  window.addEventListener("resize", getWidth);
-
-  // 控制台输出
-  const styleTitle1 = "font-size: 20px;font-weight: 600;color: rgb(244,167,89);";
-  const styleTitle2 = "font-size:12px;color: rgb(244,167,89);";
-  const styleContent = "color: rgb(30,152,255);";
-  const title1 = "無名の主页";
-  const title2 = `
- _____ __  __  _______     ____     __
-|_   _|  \\/  |/ ____\\ \\   / /\\ \\   / /
-  | | | \\  / | (___  \\ \\_/ /  \\ \\_/ /
-  | | | |\\/| |\\___ \\  \\   /    \\   /
- _| |_| |  | |____) |  | |      | |
-|_____|_|  |_|_____/   |_|      |_|`;
-  const content = `\n\n版本: ${config.version}\n主页: ${config.home}\nGithub: ${config.github}`;
-  console.info(`%c${title1} %c${title2} %c${content}`, styleTitle1, styleTitle2, styleContent);
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener("resize", getWidth);
+  socialObserver?.disconnect();
+  window.removeEventListener("resize", updateMediaHeight);
 });
 </script>
 
 <style lang="scss" scoped>
-#main {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  transform: scale(1.2);
-  transition: transform 0.3s;
-  animation: fade-blur-main-in 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-  animation-delay: 0.5s;
-  .container {
-    width: 100%;
-    height: 100vh;
-    margin: 0 auto;
-    padding: 0 0.5vw;
-    .all {
-      width: 100%;
-      height: 100%;
-      padding: 0 0.75rem;
-      display: flex;
-      flex-direction: row;
-      justify-content: center;
-      align-items: center;
-    }
-    .more {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: #00000080;
-      backdrop-filter: blur(20px);
-      z-index: 2;
-      animation: fade 0.5s;
-    }
-    @media (max-width: 1200px) {
-      padding: 0 2vw;
-    }
-  }
-  .menu {
-    position: absolute;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    top: 84%;
-    left: calc(50% - 28px);
-    width: 56px;
-    height: 34px;
-    background: rgb(0 0 0 / 20%);
-    backdrop-filter: blur(10px);
-    border-radius: 6px;
-    transition: transform 0.3s;
-    animation: fade 0.5s;
-    &:active {
-      transform: scale(0.95);
-    }
-    .i-icon {
-      transform: translateY(2px);
-    }
-    @media (min-width: 721px) {
-      display: none;
-    }
-  }
-  @media (max-height: 720px) {
-    overflow-y: auto;
-    overflow-x: hidden;
-    .container {
-      height: 721px;
-      .more {
-        height: 721px;
-        width: calc(100% + 6px);
-      }
-      @media (min-width: 391px) {
-        // w 1201px ~ max
-        padding-left: 0.7vw;
-        padding-right: 0.25vw;
-        @media (max-width: 1200px) { // w 1101px ~ 1280px
-          padding-left: 2.3vw;
-          padding-right: 1.75vw;
-        }
-        @media (max-width: 1100px) { // w 993px ~ 1100px
-          padding-left: 2vw;
-          padding-right: calc(2vw - 6px);
-        }
-        @media (max-width: 992px) { // w 901px ~ 992px
-          padding-left: 2.3vw;
-          padding-right: 1.7vw;
-        }
-        @media (max-width: 900px) { // w 391px ~ 900px
-          padding-left: 2vw;
-          padding-right: calc(2vw - 6px);
-        }
-      }
-    }
-    .menu {
-      top: 605.64px; // 721px * 0.84
-      left: 170.5px; // 391 * 0.5 - 25px
-      @media (min-width: 391px) {
-        left: calc(50% - 25px);
-      }
-    }
-    .f-ter {
-      top: 675px; // 721px - 46px
-      @media (min-width: 391px) {
-        padding-left: 6px;
-      }
-    }
-  }
-  @media (max-width: 390px) {
-    overflow-x: auto;
-    .container {
-      width: 391px;
-    }
-    .menu {
-      left: 167.5px; // 391px * 0.5 - 28px
-    }
-    .f-ter {
-      width: 391px;
-    }
-    @media (min-height: 721px) {
-      overflow-y: hidden;
-    }
+.app-shell {
+  position: relative;
+  min-height: 100%;
+}
+
+.app-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.8), transparent 92%);
+  pointer-events: none;
+}
+
+.page-flow {
+  position: relative;
+  z-index: 1;
+}
+
+.media-shell {
+  padding-top: 0;
+}
+
+.media-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1080px) {
+  .media-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
