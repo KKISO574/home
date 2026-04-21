@@ -30,7 +30,7 @@
     "@icon-park/vue-next": "^1.4.2",
     "@vicons/fa": "^0.12.0",
     "@vicons/utils": "^0.1.4",
-    "@vitejs/plugin-vue": "^4.6.2",
+    "@vitejs/plugin-vue": "^5.2.3",
     "eslint": "^8.57.0",
     "eslint-plugin-vue": "^9.25.0",
     "prettier": "^3.2.5",
@@ -38,8 +38,8 @@
     "terser": "^5.30.4",
     "unplugin-auto-import": "^0.11.5",
     "unplugin-vue-components": "^0.22.12",
-    "vite": "^4.5.3",
+    "vite": "^6.2.6",
     "vite-plugin-compression": "^0.5.1",
-    "vite-plugin-pwa": "^0.14.7"
+    "vite-plugin-pwa": "^1.0.0"
   }
 }
