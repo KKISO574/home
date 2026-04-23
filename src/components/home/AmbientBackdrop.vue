@@ -1,17 +1,247 @@
 <template>
-  <div class="ambient-backdrop" aria-hidden="true">
+  <div class="ambient-backdrop" :style="backdropStyle" aria-hidden="true">
     <img class="ambient-image" :src="image" alt="" />
+    <div class="ambient-mesh" />
+    <div class="ambient-focus" />
+    <div class="ambient-rings" />
+    <div class="ambient-hud">
+      <span class="hud-tag">{{ activeTag }}</span>
+      <span class="hud-meta">{{ activeMeta }}</span>
+    </div>
+    <div class="ambient-copy-base">
+      <span v-for="(token, index) in tokenGrid" :key="`base-${token}-${index}`">{{ token }}</span>
+    </div>
+    <div class="ambient-copy-reveal">
+      <span v-for="(token, index) in revealGrid" :key="`reveal-${token}-${index}`">{{ token }}</span>
+    </div>
+
+    <svg class="ambient-links" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <line
+        v-for="link in activeLinks"
+        :key="link.id"
+        :x1="renderX"
+        :y1="renderY"
+        :x2="link.x"
+        :y2="link.y"
+        :style="{
+          opacity: link.opacity,
+          strokeWidth: link.width,
+        }"
+      />
+    </svg>
+
+    <div class="ambient-streams">
+      <span
+        v-for="stream in streams"
+        :key="stream.id"
+        class="stream-line"
+        :style="{
+          '--stream-top': stream.top,
+          '--stream-left': stream.left,
+          '--stream-width': stream.width,
+          '--stream-depth': stream.depth,
+          '--stream-rotate': stream.rotate,
+          '--stream-delay': stream.delay,
+        }"
+      />
+    </div>
+
+    <div class="ambient-ripples">
+      <span
+        v-for="ripple in ripples"
+        :key="ripple.id"
+        class="click-ripple"
+        :style="{
+          '--ripple-x': `${ripple.x}%`,
+          '--ripple-y': `${ripple.y}%`,
+        }"
+      />
+    </div>
+
+    <div class="ambient-field">
+      <span
+        v-for="node in nodes"
+        :key="node.id"
+        class="field-node"
+        :style="{
+          '--node-top': node.top,
+          '--node-left': node.left,
+          '--node-size': `${node.size}px`,
+          '--node-depth': node.depth,
+          '--node-delay': node.delay,
+        }"
+      />
+    </div>
+
     <div class="ambient-shade" />
-    <div class="ambient-scan" />
+    <div class="ambient-scanlines" />
+    <div class="ambient-noise" />
   </div>
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   image: {
     type: String,
     required: true,
   },
+});
+
+const pointerX = ref(52);
+const pointerY = ref(34);
+const renderX = ref(52);
+const renderY = ref(34);
+const driftX = ref(0);
+const driftY = ref(0);
+const targetDriftX = ref(0);
+const targetDriftY = ref(0);
+const ripples = ref([]);
+
+let frameId = 0;
+
+const nodes = [
+  { id: "n1", top: "14%", left: "10%", size: 8, depth: 0.72, delay: "0s" },
+  { id: "n2", top: "22%", left: "28%", size: 6, depth: 0.54, delay: "0.3s" },
+  { id: "n3", top: "12%", left: "52%", size: 10, depth: 0.82, delay: "0.8s" },
+  { id: "n4", top: "18%", left: "78%", size: 7, depth: 0.6, delay: "1.1s" },
+  { id: "n5", top: "42%", left: "16%", size: 6, depth: 0.46, delay: "0.5s" },
+  { id: "n6", top: "56%", left: "34%", size: 9, depth: 0.76, delay: "1.4s" },
+  { id: "n7", top: "48%", left: "62%", size: 7, depth: 0.58, delay: "0.9s" },
+  { id: "n8", top: "66%", left: "82%", size: 10, depth: 0.9, delay: "0.2s" },
+  { id: "n9", top: "78%", left: "22%", size: 8, depth: 0.62, delay: "1.7s" },
+  { id: "n10", top: "84%", left: "52%", size: 6, depth: 0.4, delay: "0.7s" },
+];
+
+const streams = [
+  { id: "s1", top: "16%", left: "4%", width: "26%", depth: 0.32, rotate: "0deg", delay: "0s" },
+  { id: "s2", top: "28%", left: "58%", width: "18%", depth: 0.52, rotate: "-14deg", delay: "0.5s" },
+  { id: "s3", top: "48%", left: "20%", width: "22%", depth: 0.44, rotate: "12deg", delay: "1.1s" },
+  { id: "s4", top: "68%", left: "56%", width: "24%", depth: 0.68, rotate: "0deg", delay: "1.6s" },
+  { id: "s5", top: "82%", left: "8%", width: "32%", depth: 0.28, rotate: "-8deg", delay: "0.9s" },
+];
+
+const tokenGrid = [
+  "CELIA",
+  "SIGNAL",
+  "HELLO",
+  "WEB3",
+  "HOME",
+  "CONTACT",
+  "AI",
+  "FLOW",
+  "CELIA",
+  "SIGNAL",
+  "HELLO",
+  "WEB3",
+  "HOME",
+  "CONTACT",
+  "AI",
+  "FLOW",
+  "CELIA",
+  "SIGNAL",
+  "HELLO",
+  "WEB3",
+  "HOME",
+  "CONTACT",
+  "AI",
+  "FLOW",
+];
+
+const revealGrid = Array.from({ length: 24 }, (_, index) =>
+  index % 3 === 0 ? "HELLO" : index % 3 === 1 ? "你好" : "AI NATIVE",
+);
+
+const activeTag = computed(() => {
+  if (renderX.value < 34) return "HELLO";
+  if (renderX.value > 68) return "CONTACT";
+  return "SIGNAL";
+});
+
+const activeMeta = computed(() => (renderY.value < 45 ? "AI NATIVE" : "WEB FLOW"));
+
+const activeLinks = computed(() =>
+  nodes
+    .map((node) => {
+      const x = parseFloat(node.left);
+      const y = parseFloat(node.top);
+      const dx = renderX.value - x;
+      const dy = renderY.value - y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const opacity = Math.max(0, 1 - distance / 26);
+
+      return {
+        id: node.id,
+        x,
+        y,
+        opacity: Number((opacity * 0.82).toFixed(3)),
+        width: opacity > 0.72 ? 0.32 : 0.18,
+      };
+    })
+    .filter((link) => link.opacity > 0.04),
+);
+
+const animatePointer = () => {
+  renderX.value += (pointerX.value - renderX.value) * 0.14;
+  renderY.value += (pointerY.value - renderY.value) * 0.14;
+  driftX.value += (targetDriftX.value - driftX.value) * 0.12;
+  driftY.value += (targetDriftY.value - driftY.value) * 0.12;
+  frameId = window.requestAnimationFrame(animatePointer);
+};
+
+const updatePointer = (event) => {
+  if (event.pointerType === "touch") return;
+
+  const x = event.clientX / window.innerWidth;
+  const y = event.clientY / window.innerHeight;
+
+  pointerX.value = x * 100;
+  pointerY.value = y * 100;
+  targetDriftX.value = (x - 0.5) * 56;
+  targetDriftY.value = (y - 0.5) * 48;
+};
+
+const createRipple = (event) => {
+  if (event.pointerType === "touch") return;
+
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const x = (event.clientX / window.innerWidth) * 100;
+  const y = (event.clientY / window.innerHeight) * 100;
+
+  ripples.value = [...ripples.value, { id, x, y }];
+
+  window.setTimeout(() => {
+    ripples.value = ripples.value.filter((ripple) => ripple.id !== id);
+  }, 1400);
+};
+
+const resetPointer = () => {
+  pointerX.value = 52;
+  pointerY.value = 34;
+  targetDriftX.value = 0;
+  targetDriftY.value = 0;
+};
+
+const backdropStyle = computed(() => ({
+  "--pointer-x": `${renderX.value}%`,
+  "--pointer-y": `${renderY.value}%`,
+  "--drift-x": driftX.value,
+  "--drift-y": driftY.value,
+}));
+
+onMounted(() => {
+  frameId = window.requestAnimationFrame(animatePointer);
+  window.addEventListener("pointermove", updatePointer);
+  window.addEventListener("pointerdown", createRipple);
+  window.addEventListener("pointerleave", resetPointer);
+  window.addEventListener("blur", resetPointer);
+});
+
+onBeforeUnmount(() => {
+  window.cancelAnimationFrame(frameId);
+  window.removeEventListener("pointermove", updatePointer);
+  window.removeEventListener("pointerdown", createRipple);
+  window.removeEventListener("pointerleave", resetPointer);
+  window.removeEventListener("blur", resetPointer);
 });
 </script>
 
@@ -19,47 +249,380 @@ defineProps({
 .ambient-backdrop {
   position: fixed;
   inset: 0;
-  z-index: -2;
+  z-index: 0;
   overflow: hidden;
+  pointer-events: none;
   background:
-    linear-gradient(180deg, rgb(6 11 18 / 0.15), rgb(6 11 18 / 0.82)),
+    radial-gradient(circle at top, rgb(255 255 255 / 0.02), transparent 28%),
     #070b11;
+}
+
+.ambient-image,
+.ambient-mesh,
+.ambient-focus,
+.ambient-rings,
+.ambient-hud,
+.ambient-copy-base,
+.ambient-copy-reveal,
+.ambient-links,
+.ambient-streams,
+.ambient-ripples,
+.ambient-field,
+.ambient-shade,
+.ambient-scanlines,
+.ambient-noise {
+  position: absolute;
+  inset: 0;
 }
 
 .ambient-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.28;
-  transform: scale(1.05);
-  animation: ambientDrift 24s ease-in-out infinite alternate;
-  filter: saturate(0.9) contrast(1.08) brightness(0.68);
+  opacity: 0.22;
+  transform: scale(1.08)
+    translate3d(calc(var(--drift-x) * -0.7px), calc(var(--drift-y) * -0.7px), 0);
+  filter: saturate(0.9) contrast(1.08) brightness(0.64);
+  transition: transform 0.18s linear;
+}
+
+.ambient-mesh {
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(rgb(102 231 216 / 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(102 231 216 / 0.028) 1px, transparent 1px);
+  background-size:
+    72px 72px,
+    72px 72px,
+    216px 216px,
+    216px 216px;
+  transform: translate3d(calc(var(--drift-x) * 0.45px), calc(var(--drift-y) * 0.45px), 0);
+  mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.88), transparent 94%);
+  opacity: 0.72;
+  transition: transform 0.18s linear;
+}
+
+.ambient-focus {
+  background:
+    radial-gradient(
+      600px circle at var(--pointer-x) var(--pointer-y),
+      rgb(102 231 216 / 0.24),
+      transparent 40%
+    ),
+    radial-gradient(
+      260px circle at var(--pointer-x) var(--pointer-y),
+      rgb(244 248 255 / 0.16),
+      transparent 52%
+    ),
+    radial-gradient(circle at 84% 12%, rgb(245 185 113 / 0.08), transparent 24%);
+  mix-blend-mode: screen;
+}
+
+.ambient-rings {
+  background:
+    radial-gradient(
+      circle at var(--pointer-x) var(--pointer-y),
+      transparent 0 78px,
+      rgb(244 248 255 / 0.14) 78px 79px,
+      transparent 79px 136px,
+      rgb(102 231 216 / 0.16) 136px 137px,
+      transparent 137px 194px,
+      rgb(255 255 255 / 0.08) 194px 195px,
+      transparent 195px 100%
+    );
+  opacity: 0.84;
+}
+
+.ambient-hud {
+  left: min(calc(var(--pointer-x) + 28px), calc(100% - 170px));
+  top: clamp(16px, calc(var(--pointer-y) - 18px), calc(100% - 56px));
+  right: auto;
+  bottom: auto;
+  width: auto;
+  height: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.04)),
+    rgb(10 16 26 / 0.62);
+  box-shadow:
+    0 12px 32px rgb(0 0 0 / 0.24),
+    inset 0 1px 0 rgb(255 255 255 / 0.1);
+  backdrop-filter: blur(18px);
+  transform: translate3d(calc(var(--drift-x) * 0.32px), calc(var(--drift-y) * 0.32px), 0);
+}
+
+.hud-tag,
+.hud-meta {
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.hud-tag {
+  color: var(--text-main);
+}
+
+.hud-meta {
+  color: var(--accent-cyan);
+}
+
+.ambient-copy-base,
+.ambient-copy-reveal {
+  padding: 5vh 4vw;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5vh 2vw;
+  align-content: stretch;
+  user-select: none;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+}
+
+.ambient-copy-base {
+  transform: translate3d(calc(var(--drift-x) * 0.2px), calc(var(--drift-y) * 0.2px), 0);
+}
+
+.ambient-copy-base span,
+.ambient-copy-reveal span {
+  justify-self: center;
+  align-self: center;
+  font-size: clamp(1rem, 2vw, 2rem);
+}
+
+.ambient-copy-base span {
+  color: rgb(255 255 255 / 0.045);
+}
+
+.ambient-copy-reveal {
+  color: rgb(244 248 255 / 0.28);
+  transform: translate3d(calc(var(--drift-x) * 0.26px), calc(var(--drift-y) * 0.26px), 0);
+  mask-image: radial-gradient(
+    220px circle at var(--pointer-x) var(--pointer-y),
+    rgb(0 0 0 / 0.96) 0,
+    rgb(0 0 0 / 0.96) 30%,
+    transparent 72%
+  );
+  -webkit-mask-image: radial-gradient(
+    220px circle at var(--pointer-x) var(--pointer-y),
+    rgb(0 0 0 / 0.96) 0,
+    rgb(0 0 0 / 0.96) 30%,
+    transparent 72%
+  );
+}
+
+.ambient-links {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ambient-links line {
+  stroke: rgb(102 231 216 / 0.9);
+  filter: drop-shadow(0 0 8px rgb(102 231 216 / 0.25));
+}
+
+.ambient-streams {
+  transform: translate3d(calc(var(--drift-x) * 0.3px), calc(var(--drift-y) * 0.3px), 0);
+}
+
+.stream-line {
+  position: absolute;
+  top: var(--stream-top);
+  left: var(--stream-left);
+  width: var(--stream-width);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.18), transparent);
+  opacity: 0.42;
+  transform: translate3d(
+      calc(var(--drift-x) * var(--stream-depth) * 1px),
+      calc(var(--drift-y) * var(--stream-depth) * 1px),
+      0
+    )
+    rotate(var(--stream-rotate));
+  animation: streamPulse 5.4s ease-in-out infinite;
+  animation-delay: var(--stream-delay);
+}
+
+.ambient-ripples {
+  overflow: hidden;
+}
+
+.click-ripple {
+  position: absolute;
+  left: var(--ripple-x);
+  top: var(--ripple-y);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgb(244 248 255 / 0.5);
+  background: radial-gradient(circle, rgb(102 231 216 / 0.22), transparent 56%);
+  transform: translate(-50%, -50%);
+  animation: rippleWave 1.4s cubic-bezier(0.18, 0.8, 0.2, 1) forwards;
+}
+
+.ambient-field {
+  transform: translate3d(calc(var(--drift-x) * 0.2px), calc(var(--drift-y) * 0.2px), 0);
+}
+
+.field-node {
+  position: absolute;
+  top: var(--node-top);
+  left: var(--node-left);
+  width: var(--node-size);
+  height: var(--node-size);
+  border-radius: 50%;
+  background: rgb(236 244 255 / 0.9);
+  box-shadow:
+    0 0 0 6px rgb(102 231 216 / 0.08),
+    0 0 18px rgb(102 231 216 / 0.18);
+  transform: translate3d(
+    calc(var(--drift-x) * var(--node-depth) * 1px),
+    calc(var(--drift-y) * var(--node-depth) * 1px),
+    0
+  );
+  animation: nodePulse 4.8s ease-in-out infinite;
+  animation-delay: var(--node-delay);
+}
+
+.field-node:nth-child(3n) {
+  background: rgb(245 185 113 / 0.88);
+  box-shadow:
+    0 0 0 6px rgb(245 185 113 / 0.06),
+    0 0 18px rgb(245 185 113 / 0.18);
 }
 
 .ambient-shade {
-  position: absolute;
-  inset: 0;
   background:
-    linear-gradient(180deg, rgb(7 11 17 / 0.28) 0%, rgb(7 11 17 / 0.78) 44%, #070b11 100%),
-    linear-gradient(90deg, rgb(7 11 17 / 0.92) 0%, rgb(7 11 17 / 0.46) 36%, rgb(7 11 17 / 0.82) 100%);
+    linear-gradient(180deg, rgb(7 11 17 / 0.24) 0%, rgb(7 11 17 / 0.76) 42%, #070b11 100%),
+    linear-gradient(90deg, rgb(7 11 17 / 0.92) 0%, rgb(7 11 17 / 0.38) 34%, rgb(7 11 17 / 0.8) 100%);
 }
 
-.ambient-scan {
-  position: absolute;
-  inset: 0;
+.ambient-scanlines {
   background:
-    linear-gradient(90deg, transparent 0%, rgb(102 231 216 / 0.08) 48%, transparent 100%),
-    linear-gradient(180deg, transparent 0%, rgb(245 185 113 / 0.1) 100%);
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 6px,
+      rgb(255 255 255 / 0.014) 6px 7px
+    ),
+    linear-gradient(
+      90deg,
+      transparent 0,
+      rgb(102 231 216 / 0.07) 48%,
+      transparent 100%
+    );
+  background-position:
+    0 0,
+    calc(var(--pointer-x) - 20%) 0;
+  opacity: 0.54;
   mix-blend-mode: screen;
-  opacity: 0.55;
 }
 
-@keyframes ambientDrift {
-  from {
-    transform: scale(1.05) translate3d(0, 0, 0);
+.ambient-noise {
+  background:
+    radial-gradient(circle at 20% 18%, rgb(255 255 255 / 0.04), transparent 18%),
+    radial-gradient(circle at 82% 72%, rgb(255 255 255 / 0.04), transparent 22%);
+  opacity: 0.34;
+}
+
+@keyframes nodePulse {
+  0%,
+  100% {
+    opacity: 0.42;
+    transform: translate3d(
+        calc(var(--drift-x) * var(--node-depth) * 1px),
+        calc(var(--drift-y) * var(--node-depth) * 1px),
+        0
+      )
+      scale(0.86);
   }
-  to {
-    transform: scale(1.12) translate3d(-1.6%, -0.8%, 0);
+
+  50% {
+    opacity: 1;
+    transform: translate3d(
+        calc(var(--drift-x) * var(--node-depth) * 1px),
+        calc(var(--drift-y) * var(--node-depth) * 1px),
+        0
+      )
+      scale(1.08);
+  }
+}
+
+@keyframes streamPulse {
+  0%,
+  100% {
+    opacity: 0.16;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes rippleWave {
+  0% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(0.45);
+  }
+
+  70% {
+    opacity: 0.42;
+    transform: translate(-50%, -50%) scale(7.8);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(11);
+  }
+}
+
+@media (max-width: 720px) {
+  .ambient-image {
+    opacity: 0.18;
+  }
+
+  .ambient-rings,
+  .ambient-streams {
+    opacity: 0.65;
+  }
+
+  .ambient-mesh {
+    background-size:
+      54px 54px,
+      54px 54px,
+      162px 162px,
+      162px 162px;
+  }
+
+  .ambient-copy-base,
+  .ambient-copy-reveal {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4vh 4vw;
+  }
+
+  .ambient-hud {
+    display: none;
+  }
+
+  .ambient-copy-reveal {
+    mask-image: radial-gradient(
+      160px circle at var(--pointer-x) var(--pointer-y),
+      rgb(0 0 0 / 0.96) 0,
+      rgb(0 0 0 / 0.96) 28%,
+      transparent 74%
+    );
+    -webkit-mask-image: radial-gradient(
+      160px circle at var(--pointer-x) var(--pointer-y),
+      rgb(0 0 0 / 0.96) 0,
+      rgb(0 0 0 / 0.96) 28%,
+      transparent 74%
+    );
   }
 }
 </style>

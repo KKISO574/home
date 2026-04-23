@@ -1,7 +1,6 @@
 <template>
   <div class="app-shell">
     <AmbientBackdrop :image="ambientImage" />
-    <div class="app-grid" aria-hidden="true" />
     <main class="page-flow">
       <HeroSection
         :site-name="siteName"
@@ -128,18 +127,6 @@ onBeforeUnmount(() => {
 .app-shell {
   position: relative;
   min-height: 100%;
-}
-
-.app-grid {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  background-image:
-    linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px);
-  background-size: 72px 72px;
-  mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.8), transparent 92%);
-  pointer-events: none;
 }
 
 .page-flow {

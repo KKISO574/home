@@ -3,8 +3,8 @@
     <div class="panel-head">
       <div class="panel-title">
         <span class="panel-kicker">Music</span>
-        <h2>播放序列</h2>
-        <p class="panel-summary">播放器、进度和歌单统一收进同一块界面里。</p>
+        <h2>最近在听</h2>
+        <p class="panel-summary">保留几首最近常听的歌。</p>
       </div>
 
       <button class="queue-toggle" :class="{ active: playlistOpen }" type="button" @click="togglePlaylist">

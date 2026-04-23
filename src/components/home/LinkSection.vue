@@ -3,7 +3,7 @@
     <div class="container">
       <div class="section-heading">
         <span class="section-kicker">Links</span>
-        <h2>常用入口集中在一个界面里</h2>
+        <h2>常用入口</h2>
         <p>收藏的站点、服务和日常使用入口。</p>
       </div>
 

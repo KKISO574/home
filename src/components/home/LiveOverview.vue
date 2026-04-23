@@ -10,8 +10,8 @@
         <article class="quote-panel">
           <div class="panel-head">
             <div>
-              <span class="panel-kicker">Realtime Note</span>
-              <h3>今日讯号</h3>
+              <span class="panel-kicker">Quote</span>
+              <h3>今日摘录</h3>
             </div>
             <button class="refresh-button" type="button" @click="$emit('refresh-quote')">
               刷新
@@ -35,7 +35,7 @@
           </article>
 
           <article class="metric-tile">
-            <span class="metric-label">环境回执</span>
+            <span class="metric-label">当前天气</span>
             <p class="metric-copy strong">{{ weatherLine || "天气数据更新中" }}</p>
           </article>
 
