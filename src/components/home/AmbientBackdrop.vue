@@ -1,5 +1,10 @@
 <template>
-  <div class="ambient-backdrop" :style="backdropStyle" aria-hidden="true">
+  <div
+    class="ambient-backdrop"
+    :class="[`scene-${scene}`, { 'is-active': pointerActive }]"
+    :style="backdropStyle"
+    aria-hidden="true"
+  >
     <img class="ambient-image" :src="image" alt="" />
     <div class="ambient-mesh" />
     <div class="ambient-focus" />
@@ -80,6 +85,8 @@
 </template>
 
 <script setup>
+import { useSceneInteraction } from "@/composables/useSceneInteraction.js";
+
 const props = defineProps({
   image: {
     type: String,
@@ -87,6 +94,7 @@ const props = defineProps({
   },
 });
 
+const { scene, activeTarget, sceneTitle, sceneAction } = useSceneInteraction();
 const pointerX = ref(52);
 const pointerY = ref(34);
 const renderX = ref(52);
@@ -95,6 +103,7 @@ const driftX = ref(0);
 const driftY = ref(0);
 const targetDriftX = ref(0);
 const targetDriftY = ref(0);
+const pointerActive = ref(false);
 const ripples = ref([]);
 
 let frameId = 0;
@@ -120,44 +129,68 @@ const streams = [
   { id: "s5", top: "82%", left: "8%", width: "32%", depth: 0.28, rotate: "-8deg", delay: "0.9s" },
 ];
 
-const tokenGrid = [
-  "CELIA",
-  "SIGNAL",
-  "HELLO",
-  "WEB3",
-  "HOME",
-  "CONTACT",
-  "AI",
-  "FLOW",
-  "CELIA",
-  "SIGNAL",
-  "HELLO",
-  "WEB3",
-  "HOME",
-  "CONTACT",
-  "AI",
-  "FLOW",
-  "CELIA",
-  "SIGNAL",
-  "HELLO",
-  "WEB3",
-  "HOME",
-  "CONTACT",
-  "AI",
-  "FLOW",
-];
+const sceneConfigs = {
+  hero: {
+    primary: "102 231 216",
+    secondary: "245 185 113",
+    focus: "620px",
+    revealSize: "230px",
+    linkReach: 28,
+    tokens: ["CELIA", "HOME", "HELLO", "7BOE", "NOTES", "MUSIC"],
+    revealWords: ["HELLO", "你好", "CELIA", "7BOE.TOP"],
+  },
+  live: {
+    primary: "125 183 255",
+    secondary: "102 231 216",
+    focus: "540px",
+    revealSize: "210px",
+    linkReach: 24,
+    tokens: ["TODAY", "TIME", "WEATHER", "QUOTE", "DATE", "NOW"],
+    revealWords: ["TODAY", "TIME", "WEATHER", "QUOTE"],
+  },
+  links: {
+    primary: "102 231 216",
+    secondary: "125 183 255",
+    focus: "700px",
+    revealSize: "280px",
+    linkReach: 34,
+    tokens: ["BLOG", "CLOUD", "TOOLS", "MUSIC", "LINKS", "OPEN"],
+    revealWords: ["OPEN", "7BOE.TOP", "入口", "BLOG"],
+  },
+  music: {
+    primary: "245 185 113",
+    secondary: "102 231 216",
+    focus: "680px",
+    revealSize: "260px",
+    linkReach: 30,
+    tokens: ["MUSIC", "PLAY", "LYRIC", "QUEUE", "NE-YO", "VOLUME"],
+    revealWords: ["PLAY", "SO SICK", "歌词", "QUEUE"],
+  },
+  contact: {
+    primary: "236 244 255",
+    secondary: "245 185 113",
+    focus: "560px",
+    revealSize: "240px",
+    linkReach: 32,
+    tokens: ["GITHUB", "EMAIL", "QQ", "STEAM", "CONTACT", "CELIA"],
+    revealWords: ["CONTACT", "CELIA", "Github", "Email"],
+  },
+};
 
-const revealGrid = Array.from({ length: 24 }, (_, index) =>
-  index % 3 === 0 ? "HELLO" : index % 3 === 1 ? "你好" : "AI NATIVE",
+const activeConfig = computed(() => sceneConfigs[scene.value] || sceneConfigs.hero);
+const activeRevealWords = computed(() => {
+  if (!activeTarget.value) return activeConfig.value.revealWords;
+  return [activeTarget.value, ...activeConfig.value.revealWords].slice(0, 6);
+});
+const tokenGrid = computed(() =>
+  Array.from({ length: 24 }, (_, index) => activeConfig.value.tokens[index % activeConfig.value.tokens.length]),
+);
+const revealGrid = computed(() =>
+  Array.from({ length: 24 }, (_, index) => activeRevealWords.value[index % activeRevealWords.value.length]),
 );
 
-const activeTag = computed(() => {
-  if (renderX.value < 34) return "HELLO";
-  if (renderX.value > 68) return "CONTACT";
-  return "SIGNAL";
-});
-
-const activeMeta = computed(() => (renderY.value < 45 ? "AI NATIVE" : "WEB FLOW"));
+const activeTag = computed(() => sceneTitle.value);
+const activeMeta = computed(() => sceneAction.value);
 
 const activeLinks = computed(() =>
   nodes
@@ -167,7 +200,7 @@ const activeLinks = computed(() =>
       const dx = renderX.value - x;
       const dy = renderY.value - y;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      const opacity = Math.max(0, 1 - distance / 26);
+      const opacity = Math.max(0, 1 - distance / activeConfig.value.linkReach);
 
       return {
         id: node.id,
@@ -198,6 +231,7 @@ const updatePointer = (event) => {
   pointerY.value = y * 100;
   targetDriftX.value = (x - 0.5) * 56;
   targetDriftY.value = (y - 0.5) * 48;
+  pointerActive.value = true;
 };
 
 const createRipple = (event) => {
@@ -219,6 +253,7 @@ const resetPointer = () => {
   pointerY.value = 34;
   targetDriftX.value = 0;
   targetDriftY.value = 0;
+  pointerActive.value = false;
 };
 
 const backdropStyle = computed(() => ({
@@ -226,6 +261,10 @@ const backdropStyle = computed(() => ({
   "--pointer-y": `${renderY.value}%`,
   "--drift-x": driftX.value,
   "--drift-y": driftY.value,
+  "--scene-primary": activeConfig.value.primary,
+  "--scene-secondary": activeConfig.value.secondary,
+  "--focus-size": activeConfig.value.focus,
+  "--reveal-size": activeConfig.value.revealSize,
 }));
 
 onMounted(() => {
@@ -255,6 +294,27 @@ onBeforeUnmount(() => {
   background:
     radial-gradient(circle at top, rgb(255 255 255 / 0.02), transparent 28%),
     #070b11;
+  transition: background 0.32s ease;
+}
+
+.ambient-backdrop::before {
+  content: "";
+  position: absolute;
+  inset: -18%;
+  background:
+    conic-gradient(
+      from 18deg at var(--pointer-x) var(--pointer-y),
+      transparent 0deg,
+      rgb(var(--scene-primary) / 0.1) 46deg,
+      transparent 92deg,
+      rgb(var(--scene-secondary) / 0.08) 160deg,
+      transparent 236deg,
+      rgb(244 248 255 / 0.05) 290deg,
+      transparent 360deg
+    );
+  opacity: 0.62;
+  filter: blur(10px);
+  transform: translate3d(calc(var(--drift-x) * 0.36px), calc(var(--drift-y) * 0.36px), 0);
 }
 
 .ambient-image,
@@ -306,16 +366,16 @@ onBeforeUnmount(() => {
 .ambient-focus {
   background:
     radial-gradient(
-      600px circle at var(--pointer-x) var(--pointer-y),
-      rgb(102 231 216 / 0.24),
+      var(--focus-size) circle at var(--pointer-x) var(--pointer-y),
+      rgb(var(--scene-primary) / 0.34),
       transparent 40%
     ),
     radial-gradient(
       260px circle at var(--pointer-x) var(--pointer-y),
-      rgb(244 248 255 / 0.16),
+      rgb(244 248 255 / 0.2),
       transparent 52%
     ),
-    radial-gradient(circle at 84% 12%, rgb(245 185 113 / 0.08), transparent 24%);
+    radial-gradient(circle at 84% 12%, rgb(var(--scene-secondary) / 0.14), transparent 24%);
   mix-blend-mode: screen;
 }
 
@@ -326,12 +386,12 @@ onBeforeUnmount(() => {
       transparent 0 78px,
       rgb(244 248 255 / 0.14) 78px 79px,
       transparent 79px 136px,
-      rgb(102 231 216 / 0.16) 136px 137px,
+      rgb(var(--scene-primary) / 0.18) 136px 137px,
       transparent 137px 194px,
-      rgb(255 255 255 / 0.08) 194px 195px,
+      rgb(var(--scene-secondary) / 0.12) 194px 195px,
       transparent 195px 100%
     );
-  opacity: 0.84;
+  opacity: 0.96;
 }
 
 .ambient-hud {
@@ -369,7 +429,7 @@ onBeforeUnmount(() => {
 }
 
 .hud-meta {
-  color: var(--accent-cyan);
+  color: rgb(var(--scene-primary) / 1);
 }
 
 .ambient-copy-base,
@@ -383,6 +443,13 @@ onBeforeUnmount(() => {
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-weight: 700;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+}
+
+.ambient-backdrop.is-active .ambient-copy-base,
+.ambient-backdrop.is-active .ambient-copy-reveal {
+  opacity: 1;
 }
 
 .ambient-copy-base {
@@ -401,16 +468,16 @@ onBeforeUnmount(() => {
 }
 
 .ambient-copy-reveal {
-  color: rgb(244 248 255 / 0.28);
+  color: rgb(244 248 255 / 0.34);
   transform: translate3d(calc(var(--drift-x) * 0.26px), calc(var(--drift-y) * 0.26px), 0);
   mask-image: radial-gradient(
-    220px circle at var(--pointer-x) var(--pointer-y),
+    var(--reveal-size) circle at var(--pointer-x) var(--pointer-y),
     rgb(0 0 0 / 0.96) 0,
     rgb(0 0 0 / 0.96) 30%,
     transparent 72%
   );
   -webkit-mask-image: radial-gradient(
-    220px circle at var(--pointer-x) var(--pointer-y),
+    var(--reveal-size) circle at var(--pointer-x) var(--pointer-y),
     rgb(0 0 0 / 0.96) 0,
     rgb(0 0 0 / 0.96) 30%,
     transparent 72%
@@ -424,8 +491,8 @@ onBeforeUnmount(() => {
 }
 
 .ambient-links line {
-  stroke: rgb(102 231 216 / 0.9);
-  filter: drop-shadow(0 0 8px rgb(102 231 216 / 0.25));
+  stroke: rgb(var(--scene-primary) / 0.9);
+  filter: drop-shadow(0 0 8px rgb(var(--scene-primary) / 0.28));
 }
 
 .ambient-streams {
@@ -462,7 +529,7 @@ onBeforeUnmount(() => {
   height: 28px;
   border-radius: 50%;
   border: 1px solid rgb(244 248 255 / 0.5);
-  background: radial-gradient(circle, rgb(102 231 216 / 0.22), transparent 56%);
+  background: radial-gradient(circle, rgb(var(--scene-primary) / 0.24), transparent 56%);
   transform: translate(-50%, -50%);
   animation: rippleWave 1.4s cubic-bezier(0.18, 0.8, 0.2, 1) forwards;
 }
@@ -478,10 +545,10 @@ onBeforeUnmount(() => {
   width: var(--node-size);
   height: var(--node-size);
   border-radius: 50%;
-  background: rgb(236 244 255 / 0.9);
+  background: rgb(var(--scene-primary) / 0.9);
   box-shadow:
-    0 0 0 6px rgb(102 231 216 / 0.08),
-    0 0 18px rgb(102 231 216 / 0.18);
+    0 0 0 6px rgb(var(--scene-primary) / 0.08),
+    0 0 18px rgb(var(--scene-primary) / 0.2);
   transform: translate3d(
     calc(var(--drift-x) * var(--node-depth) * 1px),
     calc(var(--drift-y) * var(--node-depth) * 1px),
@@ -492,10 +559,10 @@ onBeforeUnmount(() => {
 }
 
 .field-node:nth-child(3n) {
-  background: rgb(245 185 113 / 0.88);
+  background: rgb(var(--scene-secondary) / 0.88);
   box-shadow:
-    0 0 0 6px rgb(245 185 113 / 0.06),
-    0 0 18px rgb(245 185 113 / 0.18);
+    0 0 0 6px rgb(var(--scene-secondary) / 0.07),
+    0 0 18px rgb(var(--scene-secondary) / 0.18);
 }
 
 .ambient-shade {
@@ -514,7 +581,7 @@ onBeforeUnmount(() => {
     linear-gradient(
       90deg,
       transparent 0,
-      rgb(102 231 216 / 0.07) 48%,
+      rgb(var(--scene-primary) / 0.08) 48%,
       transparent 100%
     );
   background-position:

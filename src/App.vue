@@ -1,7 +1,16 @@
 <template>
   <div class="app-shell">
     <AmbientBackdrop :image="ambientImage" />
-    <main class="page-flow">
+    <SpaceGateway
+      v-if="!hasEntered"
+      :site-name="siteName"
+      :site-author="siteAuthor"
+      :site-url-text="siteUrlText"
+      :weather-line="weatherLine"
+      @enter="enterHome"
+    />
+
+    <main v-show="hasEntered" class="page-flow" :class="{ 'is-revealed': hasEntered }">
       <HeroSection
         :site-name="siteName"
         :site-author="siteAuthor"
@@ -54,6 +63,7 @@
 
 <script setup>
 import AmbientBackdrop from "@/components/home/AmbientBackdrop.vue";
+import SpaceGateway from "@/components/home/SpaceGateway.vue";
 import HeroSection from "@/components/home/HeroSection.vue";
 import LiveOverview from "@/components/home/LiveOverview.vue";
 import LinkSection from "@/components/home/LinkSection.vue";
@@ -75,6 +85,7 @@ const { capsuleList, siteAge } = useTimeCapsule(meta.startDate.value);
 const { siteName, siteAuthor, siteUrl, siteUrlText, siteLogo, siteIcp, descriptionPrimary } = meta;
 const socialSectionRef = ref(null);
 const matchedMediaHeight = ref(null);
+const hasEntered = ref(false);
 
 let socialObserver = null;
 
@@ -98,6 +109,14 @@ const updateMediaHeight = () => {
 
   const socialElement = socialSectionRef.value?.$el;
   matchedMediaHeight.value = socialElement?.offsetHeight || null;
+};
+
+const enterHome = () => {
+  hasEntered.value = true;
+  nextTick(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+    updateMediaHeight();
+  });
 };
 
 onMounted(() => {
@@ -132,6 +151,44 @@ onBeforeUnmount(() => {
 .page-flow {
   position: relative;
   z-index: 1;
+  min-height: 100svh;
+  opacity: 0;
+  transform: translateY(18px);
+  background:
+    radial-gradient(ellipse at 50% -6%, rgb(30 118 160 / 0.22), transparent 38%),
+    radial-gradient(circle at 12% 16%, rgb(102 231 216 / 0.08), transparent 22%),
+    radial-gradient(circle at 88% 42%, rgb(245 185 113 / 0.07), transparent 26%);
+}
+
+.page-flow::before,
+.page-flow::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.page-flow::before {
+  z-index: -1;
+  background-image:
+    radial-gradient(circle, rgb(255 255 255 / 0.42) 0 1px, transparent 1.5px),
+    radial-gradient(circle, rgb(102 231 216 / 0.38) 0 1px, transparent 1.5px);
+  background-size:
+    180px 180px,
+    280px 280px;
+  opacity: 0.18;
+}
+
+.page-flow::after {
+  z-index: -1;
+  background:
+    linear-gradient(90deg, transparent, rgb(102 231 216 / 0.07), transparent),
+    radial-gradient(ellipse at 50% 112%, rgb(16 85 120 / 0.36), transparent 42%);
+  opacity: 0.62;
+}
+
+.page-flow.is-revealed {
+  animation: pageReveal 0.72s ease forwards;
 }
 
 .media-shell {
@@ -148,6 +205,13 @@ onBeforeUnmount(() => {
 @media (max-width: 1080px) {
   .media-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@keyframes pageReveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>

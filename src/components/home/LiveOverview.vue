@@ -1,5 +1,5 @@
 <template>
-  <section id="live" class="section-shell">
+  <section id="live" class="section-shell" @pointerenter="setScene('live')" @focusin="setScene('live')">
     <div class="container">
       <div class="section-heading">
         <span class="section-kicker">Overview</span>
@@ -63,6 +63,10 @@
 </template>
 
 <script setup>
+import { useSceneInteraction } from "@/composables/useSceneInteraction.js";
+
+const { setScene } = useSceneInteraction();
+
 defineEmits(["refresh-quote"]);
 
 defineProps({

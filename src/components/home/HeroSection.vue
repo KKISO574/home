@@ -1,5 +1,5 @@
 <template>
-  <header id="top" class="hero-shell">
+  <header id="top" class="hero-shell" @pointerenter="setScene('hero')" @focusin="setScene('hero')">
     <div class="container hero-topbar">
       <a class="brand-mark" :href="siteUrl" target="_blank" rel="noreferrer">
         <img
@@ -40,6 +40,9 @@
 
 <script setup>
 import SignalStage from "@/components/home/SignalStage.vue";
+import { useSceneInteraction } from "@/composables/useSceneInteraction.js";
+
+const { setScene } = useSceneInteraction();
 
 defineProps({
   siteName: {

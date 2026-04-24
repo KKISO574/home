@@ -1,5 +1,5 @@
 <template>
-  <section id="workbench" class="section-shell">
+  <section id="workbench" class="section-shell" @pointerenter="setScene('links')" @focusin="setScene('links')">
     <div class="container">
       <div class="section-heading">
         <span class="section-kicker">Links</span>
@@ -15,6 +15,10 @@
           :href="item.link"
           target="_blank"
           rel="noreferrer"
+          @pointerenter="setActiveTarget(item.name)"
+          @focus="setActiveTarget(item.name)"
+          @pointerleave="clearActiveTarget"
+          @blur="clearActiveTarget"
         >
           <div class="link-icon">
             <Icon size="22">
@@ -47,6 +51,9 @@ import {
   Link as GlobeAlt,
 } from "@vicons/fa";
 import siteLinks from "@/assets/siteLinks.json";
+import { useSceneInteraction } from "@/composables/useSceneInteraction.js";
+
+const { setScene, setActiveTarget, clearActiveTarget } = useSceneInteraction();
 
 const siteIcon = {
   Blog,
@@ -115,6 +122,18 @@ const getHost = (url) => {
   backdrop-filter: blur(14px);
 }
 
+.link-tile:hover,
+.link-tile:focus-visible {
+  transform: translateY(-4px);
+  border-color: rgb(102 231 216 / 0.38);
+  background:
+    linear-gradient(135deg, rgb(102 231 216 / 0.12), rgb(255 255 255 / 0.03)),
+    rgb(10 17 28 / 0.76);
+  box-shadow:
+    0 20px 52px rgb(0 0 0 / 0.3),
+    0 0 34px rgb(102 231 216 / 0.1);
+}
+
 .link-icon {
   width: 46px;
   height: 46px;
@@ -124,6 +143,16 @@ const getHost = (url) => {
   justify-content: center;
   background: linear-gradient(135deg, rgb(102 231 216 / 0.18), rgb(255 255 255 / 0.03));
   color: var(--text-main);
+  transition:
+    background-color 0.24s ease,
+    transform 0.24s ease,
+    box-shadow 0.24s ease;
+}
+
+.link-tile:hover .link-icon,
+.link-tile:focus-visible .link-icon {
+  transform: translateY(-2px);
+  box-shadow: 0 0 24px rgb(102 231 216 / 0.18);
 }
 
 .link-copy {

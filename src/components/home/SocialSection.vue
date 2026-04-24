@@ -1,5 +1,5 @@
 <template>
-  <section class="social-panel">
+  <section class="social-panel" @pointerenter="setScene('contact')" @focusin="setScene('contact')">
     <div class="identity-block">
       <img
         class="identity-logo"
@@ -41,6 +41,10 @@
         :href="item.url"
         target="_blank"
         rel="noreferrer"
+        @pointerenter="setActiveTarget(item.name)"
+        @focus="setActiveTarget(item.name)"
+        @pointerleave="clearActiveTarget"
+        @blur="clearActiveTarget"
       >
         <img class="social-icon" :src="item.icon" :alt="item.name" />
         <div class="social-copy">
@@ -55,6 +59,9 @@
 
 <script setup>
 import socialLinks from "@/assets/socialLinks.json";
+import { useSceneInteraction } from "@/composables/useSceneInteraction.js";
+
+const { setScene, setActiveTarget, clearActiveTarget } = useSceneInteraction();
 
 defineProps({
   siteName: {
@@ -179,10 +186,28 @@ defineProps({
   align-items: center;
 }
 
+.social-tile:hover,
+.social-tile:focus-visible {
+  transform: translateY(-3px);
+  border-color: rgb(245 185 113 / 0.34);
+  background:
+    linear-gradient(135deg, rgb(245 185 113 / 0.1), rgb(255 255 255 / 0.03)),
+    rgb(10 17 28 / 0.76);
+  box-shadow:
+    0 18px 42px rgb(0 0 0 / 0.26),
+    0 0 28px rgb(245 185 113 / 0.08);
+}
+
 .social-icon {
   width: 40px;
   height: 40px;
   object-fit: contain;
+  transition: transform 0.24s ease;
+}
+
+.social-tile:hover .social-icon,
+.social-tile:focus-visible .social-icon {
+  transform: scale(1.06);
 }
 
 .social-copy {

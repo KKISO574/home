@@ -1,5 +1,11 @@
 <template>
-  <section class="audio-panel" :class="{ 'matched-height': isExpandedAligned }" :style="panelStyle">
+  <section
+    class="audio-panel"
+    :class="{ 'matched-height': isExpandedAligned }"
+    :style="panelStyle"
+    @pointerenter="setScene('music', trackTitle)"
+    @focusin="setScene('music', trackTitle)"
+  >
     <div class="panel-head">
       <div class="panel-title">
         <span class="panel-kicker">Music</span>
@@ -174,6 +180,7 @@ import {
 } from "@icon-park/vue-next";
 import Player from "@/components/Player.vue";
 import { mainStore } from "@/store";
+import { useSceneInteraction } from "@/composables/useSceneInteraction.js";
 
 const props = defineProps({
   panelHeight: {
@@ -183,6 +190,7 @@ const props = defineProps({
 });
 
 const audio = mainStore();
+const { scene, setScene, setActiveTarget } = useSceneInteraction();
 const playerRef = ref(null);
 const playlistOpen = ref(false);
 const volumeValue = ref(audio.volume);
@@ -237,10 +245,16 @@ const togglePlayback = () => {
 
 const changeSong = (direction) => {
   playerRef.value?.changeSong(direction);
+  nextTick(() => {
+    setActiveTarget(trackTitle.value);
+  });
 };
 
 const playTrack = (index) => {
   playerRef.value?.playTrack(index);
+  if (playlist.value[index]?.name) {
+    setActiveTarget(playlist.value[index].name);
+  }
 };
 
 const togglePlaylist = () => {
@@ -267,6 +281,12 @@ watch(
     }
   },
 );
+
+watch(trackTitle, (value) => {
+  if (scene.value === "music" && value) {
+    setActiveTarget(value);
+  }
+});
 </script>
 
 <style lang="scss" scoped>

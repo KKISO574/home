@@ -2,6 +2,7 @@
   <section
     ref="stageRef"
     class="signal-stage"
+    :class="{ 'is-active': pointerActive }"
     :style="stageStyle"
     @pointermove="onPointerMove"
     @pointerleave="onPointerLeave"
@@ -18,27 +19,27 @@
 
     <div class="signal-layout">
       <div class="signal-copy">
-        <p class="signal-kicker">PERSONAL SIGNAL / AI NATIVE SPACE</p>
+        <p class="signal-kicker">Celia / Personal Home</p>
         <h1 class="signal-title">{{ siteName }}</h1>
         <p class="signal-summary">{{ summary }}</p>
 
         <div class="signal-actions">
-          <a class="signal-button primary" href="#workbench">进入工作台</a>
-          <a class="signal-button secondary" href="#media">查看连接</a>
+          <a class="signal-button primary" href="#workbench">常用入口</a>
+          <a class="signal-button secondary" href="#media">音乐与联系</a>
         </div>
 
         <ul class="signal-feed">
           <li>{{ dateLine }}</li>
           <li>{{ timeLine }}</li>
           <li>{{ weatherLine || "天气数据更新中" }}</li>
-          <li>projects / music / contact / notes</li>
+          <li>近况 / 音乐 / 联系 / 入口</li>
         </ul>
       </div>
 
       <div class="signal-visual">
         <div class="signal-orb">
           <div class="orb-noise" aria-hidden="true" />
-          <span class="orb-kicker">Hidden Text</span>
+          <span class="orb-kicker">Hello</span>
           <strong class="orb-word">{{ activeWord }}</strong>
           <span class="orb-subtitle">{{ activeSecondary }}</span>
         </div>
@@ -78,6 +79,7 @@ const pointerX = ref(50);
 const pointerY = ref(50);
 const deltaX = ref(0);
 const deltaY = ref(0);
+const pointerActive = ref(false);
 
 const tokenGrid = computed(() => [
   "CELIA",
@@ -105,7 +107,7 @@ const hiddenGrid = computed(() =>
 );
 
 const activeWord = computed(() => (pointerX.value < 50 ? "HELLO" : "你好"));
-const activeSecondary = computed(() => (pointerY.value < 50 ? "Move around" : "Keep exploring"));
+const activeSecondary = computed(() => (pointerY.value < 50 ? "7BOE.TOP" : "ONLINE"));
 
 const stageStyle = computed(() => ({
   "--pointer-x": `${pointerX.value}%`,
@@ -124,6 +126,7 @@ const onPointerMove = (event) => {
   pointerY.value = relativeY * 100;
   deltaX.value = (relativeX - 0.5) * 80;
   deltaY.value = (relativeY - 0.5) * 52;
+  pointerActive.value = true;
 };
 
 const onPointerLeave = () => {
@@ -131,6 +134,7 @@ const onPointerLeave = () => {
   pointerY.value = 50;
   deltaX.value = 0;
   deltaY.value = 0;
+  pointerActive.value = false;
 };
 </script>
 
@@ -180,7 +184,14 @@ const onPointerLeave = () => {
 
 .signal-base-grid {
   transform: translate3d(calc(var(--delta-x) * 0.12), calc(var(--delta-y) * 0.12), 0);
-  transition: transform 0.18s ease;
+  opacity: 0;
+  transition:
+    opacity 0.28s ease,
+    transform 0.18s ease;
+}
+
+.signal-stage.is-active .signal-base-grid {
+  opacity: 1;
 }
 
 .signal-base-grid span,
@@ -199,7 +210,10 @@ const onPointerLeave = () => {
 .signal-hidden-grid {
   color: rgb(244 248 255 / 0.22);
   transform: translate3d(calc(var(--delta-x) * 0.18), calc(var(--delta-y) * 0.18), 0);
-  transition: transform 0.12s ease;
+  opacity: 0;
+  transition:
+    opacity 0.24s ease,
+    transform 0.12s ease;
   mask-image: radial-gradient(
     220px circle at var(--pointer-x) var(--pointer-y),
     rgb(0 0 0 / 0.96) 0,
@@ -212,6 +226,10 @@ const onPointerLeave = () => {
     rgb(0 0 0 / 0.96) 36%,
     transparent 68%
   );
+}
+
+.signal-stage.is-active .signal-hidden-grid {
+  opacity: 1;
 }
 
 .signal-glow {
