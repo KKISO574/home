@@ -11,8 +11,9 @@ export const getPlayerList = async (server, type, id) => {
     `${import.meta.env.VITE_SONG_API}?server=${server}&type=${type}&id=${id}`,
   );
   const data = await res.json();
+  if (!Array.isArray(data) || !data.length) return [];
 
-  if (data[0].url.startsWith("@")) {
+  if (typeof data[0]?.url === "string" && data[0].url.startsWith("@")) {
     // eslint-disable-next-line no-unused-vars
     const [handle, jsonpCallback, jsonpCallbackFunction, url] = data[0].url.split("@").slice(1);
     const jsonpData = await fetchJsonp(url).then((res) => res.json());
@@ -35,7 +36,7 @@ export const getPlayerList = async (server, type, id) => {
       url: v.url,
       cover: v.cover || v.pic,
       lrc: v.lrc,
-    }));
+    })).filter((item) => item.url);
   }
 };
 

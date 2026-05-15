@@ -1,4 +1,4 @@
-import { computed, onMounted, ref } from "vue";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getAdcode, getOtherWeather, getWeather } from "@/api";
 
 const fallbackLocation = {
@@ -11,7 +11,7 @@ const fallbackLocation = {
 
 const getTemperature = (min, max) => {
   const average = (Number(min) + Number(max)) / 2;
-  return Number.isFinite(average) ? Math.round(average) : null;
+  return Number.isFinite(average) ? Math.round(average) : "";
 };
 
 const getRectangleCenter = (rectangle = "") => {
@@ -39,90 +39,94 @@ const getAreaLabel = (adCode = {}) => {
   return city || province || "当前位置";
 };
 
+const createFallbackWeather = (label = "当前位置") => ({
+  city: label,
+  weather: "岛屿天气暂不可用",
+  temperature: "",
+  winddirection: "",
+  windpower: "",
+});
+
 export const useWeather = () => {
-  const weatherState = ref({
-    city: "",
-    weather: "",
-    temperature: "",
-    winddirection: "",
-    windpower: "",
-  });
-  const locationState = ref({ ...fallbackLocation });
+  const [weatherState, setWeatherState] = useState(() => createFallbackWeather("天气同步中"));
+  const [locationState, setLocationState] = useState({ ...fallbackLocation });
+  const [loading, setLoading] = useState(true);
 
-  const mainKey = import.meta.env.VITE_WEATHER_KEY;
-
-  const refreshWeather = async () => {
+  const refreshWeather = useCallback(async () => {
+    setLoading(true);
     try {
+      const mainKey = import.meta.env.VITE_WEATHER_KEY;
+
       if (!mainKey) {
         const backupResult = await getOtherWeather();
-        const data = backupResult.result;
-        const city = data?.city?.City || "当前位置";
+        const data = backupResult?.result;
+        const city = data?.city?.City || fallbackLocation.label;
 
-        weatherState.value = {
+        setWeatherState({
           city,
-          weather: data?.condition?.day_weather || "天气同步暂不可用",
+          weather: data?.condition?.day_weather || "天气同步中",
           temperature: getTemperature(data?.condition?.min_degree, data?.condition?.max_degree),
           winddirection: data?.condition?.day_wind_direction || "",
           windpower: data?.condition?.day_wind_power || "",
-        };
-        locationState.value = {
+        });
+        setLocationState({
           ...fallbackLocation,
           label: city,
           source: "backup",
-        };
+        });
         return;
       }
 
       const adCode = await getAdcode(mainKey);
-      if (adCode.infocode !== "10000") {
+      if (adCode?.infocode !== "10000") {
         throw new Error("地区查询失败");
       }
 
+      const areaLabel = getAreaLabel(adCode);
       const ipCenter = getRectangleCenter(adCode.rectangle);
       if (ipCenter) {
-        locationState.value = {
-          label: getAreaLabel(adCode),
+        setLocationState({
+          label: areaLabel,
           latitude: ipCenter.latitude,
           longitude: ipCenter.longitude,
           accuracy: null,
           source: "amap-ip",
-        };
+        });
       }
 
       const result = await getWeather(mainKey, adCode.adcode);
-      const liveData = result.lives?.[0];
+      const liveData = result?.lives?.[0];
       if (!liveData) {
-        weatherState.value = {
-          city: getAreaLabel(adCode),
-          weather: "天气同步暂不可用",
-          temperature: "",
-          winddirection: "",
-          windpower: "",
-        };
+        setWeatherState(createFallbackWeather(areaLabel));
         return;
       }
 
-      weatherState.value = {
-        city: getAreaLabel(adCode),
-        weather: liveData.weather,
-        temperature: liveData.temperature,
-        winddirection: liveData.winddirection,
-        windpower: liveData.windpower,
-      };
+      setWeatherState({
+        city: areaLabel,
+        weather: liveData.weather || "天气同步中",
+        temperature: liveData.temperature || "",
+        winddirection: liveData.winddirection || "",
+        windpower: liveData.windpower || "",
+      });
     } catch (error) {
-      weatherState.value = {
-        city: locationState.value.label || "当前位置",
-        weather: "天气同步暂不可用",
-        temperature: "",
-        winddirection: "",
-        windpower: "",
-      };
+      setWeatherState(createFallbackWeather(locationState.label || fallbackLocation.label));
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [locationState.label]);
 
-  const weatherLine = computed(() => {
-    const { city, weather, temperature, winddirection, windpower } = weatherState.value;
-    const segments = [city || "当前位置", weather || "天气同步暂不可用", temperature ? `${temperature}°C` : ""].filter(Boolean);
+  useEffect(() => {
+    refreshWeather();
+  }, [refreshWeather]);
+
+  const weatherLine = useMemo(() => {
+    const { city, weather, temperature, winddirection, windpower } = weatherState;
+    if (loading && (!city || city === "天气同步中")) return "天气同步中";
+
+    const segments = [city || "当前位置", weather || "岛屿天气暂不可用", temperature ? `${temperature}°C` : ""].filter(
+      Boolean,
+    );
+
     if (winddirection) {
       const directionText = winddirection.endsWith("风") ? winddirection : `${winddirection}风`;
       segments.push(directionText);
@@ -131,16 +135,13 @@ export const useWeather = () => {
       segments.push(`${windpower}级`);
     }
     return segments.join(" / ");
-  });
-
-  onMounted(() => {
-    refreshWeather();
-  });
+  }, [loading, weatherState]);
 
   return {
     weatherState,
     locationState,
     weatherLine,
+    loading,
     refreshWeather,
   };
 };

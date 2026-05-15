@@ -1,25 +1,24 @@
-# Personal Signal Home
+# Celia Island Home
 
-一个基于 Vue 3 和 Vite 的个人主页。当前版本以“太空入口 + 数字空间”为主视觉，包含入口动画、实时概览、常用链接、音乐控制台、社交入口和 PWA 缓存。
+一个基于 React + Vite + animal-island-ui 的个人主页。当前版本采用完整动森风：登岛入口、暖色羊皮纸卡片、自然岛屿背景、NookPhone 风格入口、原生音乐播放器、天气、一言、时间胶囊、社交信息和 PWA 构建。
 
 ## 功能
 
-- 太空入口页：地球落点、天气/定位状态、进入动画。
-- 首页内容流：Hero、当前状态、一言、时间胶囊、常用入口、音乐和联系信息。
-- 响应式布局：桌面、平板、手机独立约束，减少文字溢出、错位和横向滚动。
-- 失败降级：天气、音乐、图片和字体加载失败时保留稳定 fallback。
-- PWA：使用 `vite-plugin-pwa` 自动更新 Service Worker。
+- 登岛入口：轻量 CSS 岛屿地图，无重型 3D、毛玻璃或鼠标 reveal，点击进入更稳定。
+- 首页内容流：Hero、实时状态、一言、天气、时间胶囊、常用入口、音乐台和联系方式。
+- animal-island-ui：直接引入 `animal-island-ui/style`，使用 `Cursor`、`Button`、`Card`、`Time`、`Tabs`、`Divider`、`Footer`、`Icon`、`Loading`。
+- 原生音乐播放器：不再依赖 Vue APlayer，支持歌单加载、播放/暂停、切歌、进度、音量和失败 fallback。
+- 响应式布局：桌面、平板、手机都有独立约束，避免横向滚动、文本溢出和卡片错位。
+- PWA：使用 `vite-plugin-pwa` 自动更新 Service Worker，并清理过期缓存。
 
 ## 环境要求
 
-当前依赖使用 Vite 6 和新版 pnpm，建议使用：
+建议使用 Node 20 LTS。本项目已用 Node `20.20.2` 验证。
 
 ```bash
 node >= 18.12
 pnpm >= 9
 ```
-
-推荐 Node 20 LTS。Node 16 会导致当前 pnpm 无法启动。
 
 ## 本地运行
 
@@ -37,20 +36,23 @@ pnpm build
 pnpm preview
 ```
 
-构建产物输出到 `dist/`。发布前必须确认 `pnpm build` 通过，并用 `pnpm preview` 检查首屏、入口动画、音乐和移动端布局。
+构建产物输出到 `dist/`，该目录不应提交。发布前建议用 `pnpm preview` 检查入口点击、上下滚动、音乐按钮、移动端布局和控制台错误。
 
 ## 环境变量
 
 站点基础信息：
 
 ```bash
-VITE_SITE_NAME="Personal Signal"
+VITE_SITE_NAME="Celia小站"
 VITE_SITE_AUTHOR="Celia"
 VITE_SITE_URL="https://example.com"
+VITE_SITE_LOGO="/images/github.png"
 VITE_SITE_MAIN_LOGO="/images/icon/logo.png"
+VITE_SITE_APPLE_LOGO="/images/icon/apple-touch-icon.png"
 VITE_SITE_ICP=""
 VITE_SITE_START="2024-01-01"
-VITE_DESC_TEXT="一个保持在线的数字空间。"
+VITE_DESC_HELLO="Hello Island"
+VITE_DESC_TEXT="一座保持在线的个人小岛。"
 ```
 
 天气配置：
@@ -59,7 +61,7 @@ VITE_DESC_TEXT="一个保持在线的数字空间。"
 VITE_WEATHER_KEY=""
 ```
 
-配置高德 Web 服务 Key 后，会使用高德 IP 定位和实时天气。未配置时会使用备用天气接口，入口页落点保留默认坐标并显示备用状态。
+配置高德 Web 服务 Key 后，会使用高德 IP 定位和实时天气。未配置或接口失败时，页面会显示“天气同步中”或“岛屿天气暂不可用”，不会出现 `undefined`、`NaN` 或空白面板。
 
 音乐配置：
 
@@ -70,14 +72,13 @@ VITE_SONG_TYPE="playlist"
 VITE_SONG_ID="7452421335"
 ```
 
-音乐接口失败时页面不会空白，音乐面板会显示等待/失败 fallback。
+歌单接口失败或配置为空时，音乐面板会显示“歌单暂时无法装载”，控制按钮保持禁用。
 
 ## 内容配置
 
 - 常用链接：编辑 `src/assets/siteLinks.json`。
 - 社交链接：编辑 `src/assets/socialLinks.json`。
-- 背景图片：编辑 `public/images/background*.jpg`。
-- 地球贴图：`public/images/earth-blue-marble-april.jpg`。
+- 图标和头像：放在 `public/images/` 或配置到 `.env`。
 
 ## 发布前验收
 
@@ -93,10 +94,10 @@ VITE_SONG_ID="7452421335"
 
 发布标准：
 
-- 首屏无白屏、闪屏和明显背景跳动。
-- 入口页进入动画结束后没有遮罩残留。
-- Hero、链接、音乐、社交区无重叠、错位、文字溢出。
-- 天气接口失败、音乐接口失败、图片加载失败时页面仍稳定。
+- 首屏无白屏、闪屏、黑块和明显背景跳动。
+- 点击“登岛进入”无明显卡顿，进入后无遮罩残留。
+- 常用入口、音乐台、联系方式在桌面和移动端都不重叠、不溢出。
+- 天气、一言、音乐接口失败时页面仍保持稳定布局。
 - 移动端无横向滚动条。
 - PWA 更新后刷新页面可以拿到新资源。
 

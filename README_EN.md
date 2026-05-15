@@ -1,148 +1,111 @@
 English | [Chinese](./README.md)
 
-> [!IMPORTANT]
-> ## 致大家
-> This project was originally just a simple homepage. However, as more and more friends discovered this project, it received a lot of undue attention. Moreover, as a work of a beginner in front-end development, its code is quite messy and of low quality. In addition, this project has also been resold by many unknown resource or download sites, causing many unsuspecting buyers to find my contact information from the source code to consult on problems or request features. But due to current personal life reasons, and I have never gained any benefits from this project, so I am unable to maintain this project. This repository will not be archived. We will actively accept PRs from all the experts, but no updates will be made for any new features or bugs. Please understand!
+# Celia Island Home
 
-<p>
-<strong><h2>Homepage</h2></strong>
-Simple little homepage, had enough of the original one and made a new one
-</p>
+A personal homepage built with React, Vite, and animal-island-ui. The current design uses a full cozy island style: landing gate, warm parchment cards, natural island background, NookPhone-style links, native music player, weather, Hitokoto quote, time capsule, social links, and PWA build output.
 
-![無名の主页](https://s2.loli.net/2022/07/14/K5JigfvDoNewtuS.webp)
+## Features
 
->The logo font on the home page has been compressed, so if you use a font other than this logo, it will change back to the default font, Here is the [full font](https://file.4everland.app/font/Other/Pacifico-Regular.ttf)  
+- Island landing gate with lightweight CSS visuals and no heavy 3D, glass blur, or pointer reveal.
+- Homepage sections for hero, live status, quote, weather, time capsule, links, music, contact, and footer.
+- Direct `animal-island-ui/style` usage with `Cursor`, `Button`, `Card`, `Time`, `Tabs`, `Divider`, `Footer`, `Icon`, and `Loading`.
+- Native React audio player for playlist loading, play/pause, previous/next, progress, volume, and failure fallback.
+- Responsive layout for desktop, tablet, and mobile with fixed boundaries to avoid overflow and misalignment.
+- PWA support through `vite-plugin-pwa` with outdated cache cleanup.
 
-### Demo
+## Requirements
 
->Due to CDN caching, you may need `Ctrl` + `F5` to force a browser cache refresh to see the latest results
-
-- [無名の主页](https://www.imsyy.top)
-- [無名の主页 - Dev](https://home-imsyy.vercel.app)
-- [無名の主页 - Standby](https://home-5iw.pages.dev)
-
-### Functions
-
-- [x] Loading animation
-- [x] Site description
-- [x] Hitokoto
-- [x] Date and time
-- [x] Live weather
-- [x] Time progress bar
-- [x] Music player
-- [x] Mobile adaptation
-
-* [ ] Player cancels using Aplayer
-
-### Deployment
-
-* **Installation** [node.js](https://nodejs.org/zh-cn/) **Environment**
-
-  > node > 16.16.0  
-  > npm > 8.15.0
-  
-* Then run the `cmd` terminal with **administrator privileges** and `cd` to the project root directory
-* In the `terminal` type:
+Node 20 LTS is recommended. This project has been verified with Node `20.20.2`.
 
 ```bash
-# Install pnpm
-npm install -g pnpm
+node >= 18.12
+pnpm >= 9
+```
 
-# Install the dependencies
+## Local Development
+
+```bash
 pnpm install
-
-# Preview
 pnpm dev
+```
 
-# Build
+The default dev port is `3000`.
+
+## Build And Preview
+
+```bash
 pnpm build
+pnpm preview
 ```
 
-> Once the build is complete, the files in the `dist` folder can be uploaded to the server or imported and automatically deployed with one click using a hosting platform such as `Vercel`.
+Build output is written to `dist/`, which should not be committed. Before release, use `pnpm preview` to check gate entry, scrolling, music controls, mobile layout, and console errors.
 
-### Weather
+## Environment Variables
 
-Weather and area access requires `高德开放平台` related API
-
-- Go to [高德开放平台控制台](https://console.amap.com/dev/index) to create a `Key` of type `Web Service` and fill the `Key` into `VITE_WEATHER_KEY` in `.env` 
-
-It can also be replaced by other methods
-
-### Music
-
->This project uses the `Aplayer` music player based on `MetingJS` for quick song list customization  
->*Only supported in **Mainland China**
-
-Please change the song related parameters in the `.env` file to customize the song list
+Site metadata:
 
 ```bash
-# Songs API address
-VITE_SONG_API = "https://api-meting.imsyy.top"
-# Song server ( netease-netease, tencent-qq music )
-VITE_SONG_SERVER = "netease"
-# Playback type ( song-song, playlist-playlist, album-album, search-search, artist-artist )
-VITE_SONG_TYPE = "playlist"
-# Playback ID
-VITE_SONG_ID = "7452421335"
+VITE_SITE_NAME="Celia小站"
+VITE_SITE_AUTHOR="Celia"
+VITE_SITE_URL="https://example.com"
+VITE_SITE_LOGO="/images/github.png"
+VITE_SITE_MAIN_LOGO="/images/icon/logo.png"
+VITE_SITE_APPLE_LOGO="/images/icon/apple-touch-icon.png"
+VITE_SITE_ICP=""
+VITE_SITE_START="2024-01-01"
+VITE_DESC_HELLO="Hello Island"
+VITE_DESC_TEXT="A personal island that stays online."
 ```
 
-### Fonts
-
-Now using `HarmonyOS Sans` open source font, using font splitting to improve loading speed
-
->Because this site's `CDN` has opened anti-leech, **non-site domain name is not accessible**, please change the font import link to the following content, otherwise **custom fonts will be invalid**
->
->`https://cdn.jsdelivr.net/gh/imsyy/file/font/HarmonyOS_Sans/regular.min.css`
-
-<details>
-<summary>old way</summary>
-
->As Chinese fonts are introduced in this project, Chinese fonts need to be compressed to improve the loading speed of the page (you can also cancel the use of Chinese fonts)
-
-#### Chinese font removal traditional
-
-- Install `Python 3.7` and `pip`
-- Run `pip install fonttools`
-- Download [sc_unicode.txt](https://gist.githubusercontent.com/imaegoo/d64e5088b723c2e02c40985f55ff12db/raw/5ebd2ce49418c73459a9dfe050483409306a6c1d/sc_unicode.txt)
-- Run `pyftsubset font-name.ttf --unicodes-file=sc_unicode.txt`
-
-#### fonts further compressed
-
-- Compile and install ``Google woff2``
+Weather:
 
 ```bash
-sudo apt-get install -y git g++ make
-git clone --recursive https://github.com/google/woff2.git
-cd woff2
-make clean all
+VITE_WEATHER_KEY=""
 ```
 
-- Compress the font again
+When an AMap Web Service key is configured, the app uses AMap IP lookup and live weather. If the key is empty or the API fails, the UI keeps a stable fallback instead of rendering `undefined`, `NaN`, or blank panels.
 
+Music:
+
+```bash
+VITE_SONG_API="https://api-meting.imsyy.top"
+VITE_SONG_SERVER="netease"
+VITE_SONG_TYPE="playlist"
+VITE_SONG_ID="7452421335"
 ```
-. /woff2_compress . /font_name.ttf
+
+If the playlist API fails or the configuration is empty, the music card shows a clear fallback and disables unavailable controls.
+
+## Content
+
+- Site links: edit `src/assets/siteLinks.json`.
+- Social links: edit `src/assets/socialLinks.json`.
+- Icons and avatars: place files in `public/images/` or configure them through `.env`.
+
+## Release Checklist
+
+Recommended viewport checks:
+
+```text
+1440 x 900
+1280 x 720
+768 x 1024
+390 x 844
+375 x 667
 ```
 
-- Eventually the original font can be slow loaded, **load the compressed font first**
+Release criteria:
 
->For more information, please go to [虹墨空间站](https://www.imaegoo.com/2020/chinese-font-compress/) to view the original article
+- No white screen, flash, black delayed blocks, or obvious background jumping.
+- Clicking the gate button enters the homepage without noticeable lag or stale overlay.
+- Links, music, and contact sections do not overlap or overflow on desktop or mobile.
+- Weather, quote, and music API failures keep a stable layout.
+- No horizontal scrollbar on mobile.
+- PWA refreshes to the latest assets after updates.
 
-</details>
+## Docker
 
-### Technology Stack
-
-* [Vue](https://cn.vuejs.org/)
-* [Vite](https://vitejs.cn/vite3-cn/)
-* [Pinia](https://pinia.vuejs.org/zh/)
-* [IconPark](https://iconpark.oceanengine.com/official)
-* [xicons](https://xicons.org/)
-* [Aplayer](https://aplayer.js.org/)
-
-### API
-
-* [韩小韩 WebAPI 接口](https://api.vvhan.com/)
-* [搏天 API](https://api.btstu.cn/doc/sjbz.php)
-* [高德开放平台](https://lbs.amap.com/)
-* [Hitokoto 一言](https://hitokoto.cn/)
-
-<a title="SSL" target="_blank" href="https://myssl.com/seal/detail?domain=blog.imsyy.top"><img src="https://img.shields.io/badge/MySSL-安全认证-brightgreen"></a>&nbsp;<a title="CDN" target="_blank" href="https://cdnjs.com/"><img src="https://img.shields.io/badge/CDN-Cloudflare-blue"></a>&nbsp;<a title="Copyright" target="_blank" href="https://imsyy.top/"><img src="https://img.shields.io/badge/Copyright%20%C2%A9%202020--2023-%E7%84%A1%E5%90%8D-red"></a>
+```bash
+docker build -t home .
+docker run -p 12445:12445 -d home
+```

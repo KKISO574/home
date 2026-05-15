@@ -3,33 +3,31 @@
     "browser": true,
     "es2021": true
   },
-  "extends": ["eslint:recommended", "plugin:vue/vue3-essential"],
+  "extends": ["eslint:recommended"],
+  "ignorePatterns": [
+    "auto-imports.d.ts",
+    "components.d.ts",
+    "dist/",
+    "src/**/*.vue",
+    "src/main.js",
+    "src/store/",
+    "src/style/",
+    "src/utils/getTime.js",
+    "src/views/",
+    "src/components/*.vue",
+    "src/components/home/"
+  ],
   "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true
+    },
     "ecmaVersion": "latest",
     "sourceType": "module"
   },
-  "plugins": ["vue"],
   "rules": {
-    "vue/multi-word-component-names": "off"
+    "no-unused-vars": ["error", { "varsIgnorePattern": "^[A-Z]" }]
   },
   "globals": {
-    "defineProps": true,
-    "defineEmits": true,
-    "withDefaults": true,
-    "h": true,
-    "vue": true,
-    "ref": true,
-    "reactive": true,
-    "computed": true,
-    "watch": true,
-    "provide": true,
-    "inject": true,
-    "defineComponent": true,
-    "onBeforeMount": true,
-    "onMounted": true,
-    "onBeforeUnmount": true,
-    "nextTick": true,
-    "ElMessage": true,
-    "$openList": true
+    "React": true
   }
 }
