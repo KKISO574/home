@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Cursor, Footer } from "animal-island-ui";
 import { IslandContact } from "@/components/react-home/IslandContact.jsx";
 import { IslandGate } from "@/components/react-home/IslandGate.jsx";
@@ -11,6 +11,7 @@ import { useHitokoto } from "@/hooks/useHitokoto.js";
 import { useSiteMeta } from "@/hooks/useSiteMeta.js";
 import { useTimeCapsule } from "@/hooks/useTimeCapsule.js";
 import { useWeather } from "@/hooks/useWeather.js";
+import { warmPlaylistCache } from "@/services/musicPlaylist.js";
 
 const App = () => {
   const [hasEntered, setHasEntered] = useState(false);
@@ -20,8 +21,19 @@ const App = () => {
   const hitokoto = useHitokoto();
   const timeCapsule = useTimeCapsule(meta.startDate);
 
+  useEffect(() => {
+    const scheduleIdle = window.requestIdleCallback || ((callback) => window.setTimeout(callback, 800));
+    const cancelIdle = window.cancelIdleCallback || window.clearTimeout;
+    const idleId = scheduleIdle(() => {
+      warmPlaylistCache();
+    });
+
+    return () => cancelIdle(idleId);
+  }, []);
+
   const enterHome = () => {
     setHasEntered(true);
+    warmPlaylistCache();
     window.requestAnimationFrame(() => {
       window.scrollTo({ top: 0, behavior: "auto" });
     });

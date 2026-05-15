@@ -4,19 +4,7 @@
     "es2021": true
   },
   "extends": ["eslint:recommended"],
-  "ignorePatterns": [
-    "auto-imports.d.ts",
-    "components.d.ts",
-    "dist/",
-    "src/**/*.vue",
-    "src/main.js",
-    "src/store/",
-    "src/style/",
-    "src/utils/getTime.js",
-    "src/views/",
-    "src/components/*.vue",
-    "src/components/home/"
-  ],
+  "ignorePatterns": ["dist/"],
   "parserOptions": {
     "ecmaFeatures": {
       "jsx": true

@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getPlayerList } from "@/api";
+import {
+  getMusicConfig,
+  getPlaylistCacheKey,
+  hasMusicConfig,
+  readPlaylistCache,
+  requestPlaylist,
+} from "@/services/musicPlaylist.js";
 
 const defaultTrack = {
   name: "等待歌单",
@@ -99,28 +105,39 @@ export const useMusicPlayer = () => {
     let mounted = true;
 
     const loadPlaylist = async () => {
-      const server = import.meta.env.VITE_SONG_SERVER;
-      const type = import.meta.env.VITE_SONG_TYPE;
-      const id = import.meta.env.VITE_SONG_ID;
+      const config = getMusicConfig();
 
-      if (!server || !type || !id || !import.meta.env.VITE_SONG_API) {
+      if (!hasMusicConfig(config)) {
         setPlaylist([]);
         setError("歌单配置未填写");
         setLoading(false);
         return;
       }
 
-      setLoading(true);
+      const cacheKey = getPlaylistCacheKey(config);
+      const cached = readPlaylistCache(cacheKey);
+      if (cached?.playlist.length) {
+        setPlaylist(cached.playlist);
+        setCurrentIndex(0);
+        setError("");
+        setLoading(!cached.isFresh);
+      } else {
+        setLoading(true);
+      }
+
+      if (cached?.isFresh) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        const result = await getPlayerList(server, type, id);
+        const nextPlaylist = await requestPlaylist(config);
         if (!mounted) return;
 
-        const nextPlaylist = Array.isArray(result)
-          ? result.filter((track) => track?.url).slice(0, 50)
-          : [];
-
         if (!nextPlaylist.length) {
-          setPlaylist([]);
+          if (!cached?.playlist.length) {
+            setPlaylist([]);
+          }
           setError("歌单暂时无法装载");
           return;
         }
@@ -130,8 +147,12 @@ export const useMusicPlayer = () => {
         setError("");
       } catch (requestError) {
         if (!mounted) return;
-        setPlaylist([]);
-        setError("歌单暂时无法装载");
+        if (!cached?.playlist.length) {
+          setPlaylist([]);
+          setError("歌单暂时无法装载");
+        } else {
+          setError("");
+        }
       } finally {
         if (mounted) setLoading(false);
       }

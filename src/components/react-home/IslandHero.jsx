@@ -1,11 +1,18 @@
 import { Button, Card, Divider, Icon, Time } from "animal-island-ui";
+import { SafeImage } from "@/components/react-home/SafeImage.jsx";
+import { fallbackAvatar } from "@/hooks/useSiteMeta.js";
 
 export const IslandHero = ({ meta, clock, weatherLine, onBackToGate }) => (
   <section className="island-section hero-section" id="top">
     <div className="section-container hero-grid">
       <Card className="hero-card" type="title">
         <div className="hero-logo-row">
-          <img className="hero-logo" src={meta.siteLogo} alt={`${meta.siteName} logo`} />
+          <SafeImage
+            className="hero-logo"
+            src={meta.siteAvatar}
+            fallbackSrc={fallbackAvatar}
+            alt={`${meta.siteName} avatar`}
+          />
           <div>
             <span className="eyebrow">{meta.hello}</span>
             <h1>{meta.siteName}</h1>

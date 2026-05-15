@@ -1,4 +1,3 @@
-// import axios from "axios";
 import fetchJsonp from "fetch-jsonp";
 
 /**
@@ -6,10 +5,14 @@ import fetchJsonp from "fetch-jsonp";
  */
 
 // 获取音乐播放列表
-export const getPlayerList = async (server, type, id) => {
-  const res = await fetch(
-    `${import.meta.env.VITE_SONG_API}?server=${server}&type=${type}&id=${id}`,
-  );
+export const getPlayerList = async (server, type, id, api = import.meta.env.VITE_SONG_API) => {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 9000);
+  const res = await fetch(`${api}?server=${server}&type=${type}&id=${id}`, {
+    signal: controller.signal,
+  }).finally(() => {
+    window.clearTimeout(timeout);
+  });
   const data = await res.json();
   if (!Array.isArray(data) || !data.length) return [];
 

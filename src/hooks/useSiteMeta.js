@@ -10,6 +10,9 @@ const ensureProtocol = (value = "") => {
   return `https://${value}`;
 };
 
+export const fallbackAvatar = "/images/icon/logo.png";
+export const fallbackSiteIcon = "/images/github.png";
+
 export const useSiteMeta = () =>
   useMemo(() => {
     const siteName = normalizeEnv(import.meta.env.VITE_SITE_NAME || "Celia Island");
@@ -17,10 +20,11 @@ export const useSiteMeta = () =>
       import.meta.env.VITE_SITE_AUTHOR || import.meta.env.VITE_SITE_ANTHOR || "Celia",
     );
     const siteUrl = ensureProtocol(normalizeEnv(import.meta.env.VITE_SITE_URL || "example.com"));
-    const siteLogo =
+    const siteIcon = normalizeEnv(import.meta.env.VITE_SITE_LOGO) || fallbackSiteIcon;
+    const siteAvatar =
       normalizeEnv(import.meta.env.VITE_SITE_MAIN_LOGO) ||
-      normalizeEnv(import.meta.env.VITE_SITE_LOGO) ||
-      "/images/icon/logo.png";
+      normalizeEnv(import.meta.env.VITE_SITE_AVATAR) ||
+      fallbackAvatar;
     const descriptionPrimary = normalizeEnv(
       import.meta.env.VITE_DESC_TEXT ||
         import.meta.env.VITE_SITE_DES ||
@@ -32,7 +36,9 @@ export const useSiteMeta = () =>
       siteAuthor,
       siteUrl,
       siteUrlText: stripProtocol(siteUrl),
-      siteLogo,
+      siteAvatar,
+      siteIcon,
+      siteLogo: siteAvatar,
       siteIcp: normalizeEnv(import.meta.env.VITE_SITE_ICP || ""),
       startDate: normalizeEnv(import.meta.env.VITE_SITE_START || ""),
       descriptionPrimary,

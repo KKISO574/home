@@ -15,10 +15,8 @@
   },
   "dependencies": {
     "animal-island-ui": "^0.8.1",
-    "axios": "^1.6.8",
     "dayjs": "^1.11.10",
     "fetch-jsonp": "^1.3.0",
-    "lodash-es": "^4.17.21",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
@@ -26,7 +24,6 @@
     "@vitejs/plugin-react": "^5.1.2",
     "eslint": "^8.57.0",
     "prettier": "^3.2.5",
-    "sass": "^1.75.0",
     "terser": "^5.30.4",
     "vite": "^6.2.6",
     "vite-plugin-compression": "^0.5.1",

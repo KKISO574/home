@@ -1,12 +1,14 @@
 import { Card, Divider, Icon } from "animal-island-ui";
 import socialLinks from "@/assets/socialLinks.json";
+import { SafeImage } from "@/components/react-home/SafeImage.jsx";
+import { fallbackAvatar } from "@/hooks/useSiteMeta.js";
 
 export const IslandContact = ({ meta, siteAge }) => (
   <section className="island-section contact-section" id="contact">
     <div className="section-container contact-grid">
       <Card className="villager-card" type="title">
         <div className="villager-profile">
-          <img src={meta.siteLogo} alt={`${meta.siteAuthor} avatar`} />
+          <SafeImage src={meta.siteAvatar} fallbackSrc={fallbackAvatar} alt={`${meta.siteAuthor} avatar`} />
           <div>
             <span className="eyebrow">岛民资料</span>
             <h2>{meta.siteAuthor}</h2>
@@ -51,7 +53,7 @@ export const IslandContact = ({ meta, siteAge }) => (
               rel="noreferrer"
               key={`${item.name}-${item.url}`}
             >
-              <img src={item.icon} alt="" />
+              <SafeImage src={item.icon} fallbackSrc="/images/icon/github.png" alt="" />
               <div>
                 <strong>{item.name}</strong>
                 <span>{item.tip}</span>

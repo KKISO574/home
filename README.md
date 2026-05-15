@@ -11,6 +11,11 @@
 - 响应式布局：桌面、平板、手机都有独立约束，避免横向滚动、文本溢出和卡片错位。
 - PWA：使用 `vite-plugin-pwa` 自动更新 Service Worker，并清理过期缓存。
 
+## 致谢
+
+- [imsyy/home](https://github.com/imsyy/home)：本项目的原始主页基础和功能配置来源。
+- [guokaigdg/animal-island-ui](https://github.com/guokaigdg/animal-island-ui)：提供当前动森风 UI 组件和视觉基础。
+
 ## 环境要求
 
 建议使用 Node 20 LTS。本项目已用 Node `20.20.2` 验证。
@@ -37,6 +42,16 @@ pnpm preview
 ```
 
 构建产物输出到 `dist/`，该目录不应提交。发布前建议用 `pnpm preview` 检查入口点击、上下滚动、音乐按钮、移动端布局和控制台错误。
+
+## 静态部署
+
+本项目只保留静态部署方式。执行 `pnpm build` 后，将 `dist/` 内的文件上传到静态托管平台或服务器静态目录即可。
+
+部署注意事项：
+
+- 不提交 `dist/` 到仓库。
+- 更新后如果浏览器仍显示旧页面，先刷新 Service Worker 或清理站点缓存。
+- 服务器需要把未知路由回退到 `index.html`，保证 PWA 和前端路由可正常访问。
 
 ## 环境变量
 
@@ -100,10 +115,3 @@ VITE_SONG_ID="7452421335"
 - 天气、一言、音乐接口失败时页面仍保持稳定布局。
 - 移动端无横向滚动条。
 - PWA 更新后刷新页面可以拿到新资源。
-
-## Docker
-
-```bash
-docker build -t home .
-docker run -p 12445:12445 -d home
-```

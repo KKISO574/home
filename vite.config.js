@@ -21,15 +21,8 @@ export default ({ mode }) => {
           cleanupOutdatedCaches: true,
           runtimeCaching: [
             {
-              urlPattern: /(.*?)\.(js|css|woff2|woff|ttf)/,
-              handler: "StaleWhileRevalidate",
-              options: {
-                cacheName: "asset-cache",
-              },
-            },
-            {
               urlPattern: /(.*?)\.(png|jpe?g|svg|gif|bmp|webp)/,
-              handler: "CacheFirst",
+              handler: "StaleWhileRevalidate",
               options: {
                 cacheName: "image-cache",
                 expiration: {

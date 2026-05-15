@@ -684,6 +684,7 @@ img {
 }
 
 .cover-shell {
+  position: relative;
   display: grid;
   width: 180px;
   aspect-ratio: 1;
@@ -699,10 +700,44 @@ img {
     0 12px 0 rgb(95 71 46 / 0.16);
 }
 
+.cover-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 42% 38%, rgb(255 255 255 / 0.74) 0 18%, transparent 19%),
+    radial-gradient(circle at 64% 72%, rgb(250 205 100 / 0.5) 0 10%, transparent 11%),
+    #95d48d;
+  color: var(--island-ink);
+}
+
+.island-disc {
+  display: grid;
+  width: 104px;
+  height: 104px;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, #fff7db 0 13%, transparent 14%),
+    repeating-radial-gradient(circle at center, #6bb979 0 10px, #62ad70 11px 18px);
+  box-shadow:
+    inset 0 -12px 0 rgb(95 71 46 / 0.12),
+    0 10px 0 rgb(95 71 46 / 0.12);
+}
+
 .cover-shell img {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+
+.cover-shell.cover-loaded img {
+  opacity: 1;
 }
 
 .music-copy {
@@ -849,6 +884,50 @@ img {
   font-weight: 900;
 }
 
+.playlist-skeleton {
+  display: grid;
+  gap: 10px;
+}
+
+.playlist-skeleton-row {
+  display: grid;
+  min-height: 58px;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 5px 10px;
+  align-items: center;
+  padding: 10px 12px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: rgb(255 255 255 / 0.48);
+  box-shadow: inset 0 -5px 0 rgb(95 71 46 / 0.08);
+}
+
+.playlist-skeleton-row i,
+.playlist-skeleton-row b,
+.playlist-skeleton-row em {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(255 246 216 / 0.64), rgb(255 255 255 / 0.82), rgb(255 246 216 / 0.64));
+  background-size: 220% 100%;
+  animation: softShimmer 1.15s ease-in-out infinite;
+}
+
+.playlist-skeleton-row i {
+  width: 26px;
+  height: 18px;
+  grid-row: span 2;
+}
+
+.playlist-skeleton-row b {
+  width: min(72%, 220px);
+  height: 18px;
+}
+
+.playlist-skeleton-row em {
+  width: min(44%, 150px);
+  height: 14px;
+}
+
 .contact-grid {
   align-items: stretch;
 }
@@ -987,6 +1066,16 @@ img {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes softShimmer {
+  0% {
+    background-position: 120% 0;
+  }
+
+  100% {
+    background-position: -120% 0;
   }
 }
 

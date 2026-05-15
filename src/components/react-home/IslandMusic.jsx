@@ -1,7 +1,12 @@
+import { useEffect, useState } from "react";
 import { Button, Card, Divider, Icon, Loading } from "animal-island-ui";
+import { SafeImage } from "@/components/react-home/SafeImage.jsx";
 import { formatDuration, useMusicPlayer } from "@/hooks/useMusicPlayer.js";
 
+const playlistSkeletonItems = Array.from({ length: 6 }, (_, index) => index);
+
 export const IslandMusic = () => {
+  const [coverReady, setCoverReady] = useState(false);
   const player = useMusicPlayer();
   const {
     playlist,
@@ -23,6 +28,10 @@ export const IslandMusic = () => {
     setVolume,
   } = player;
 
+  useEffect(() => {
+    setCoverReady(false);
+  }, [currentTrack.cover]);
+
   return (
     <section className="island-section" id="music">
       <div className="section-container">
@@ -37,12 +46,22 @@ export const IslandMusic = () => {
         <div className="music-grid">
           <Card className="music-player-card" type="title">
             <div className="music-main">
-              <div className="cover-shell">
+              <div className={coverReady ? "cover-shell cover-loaded" : "cover-shell"}>
+                <div className="cover-placeholder" aria-hidden="true">
+                  <span className="island-disc">
+                    <Icon name="icon-miles" size={62} />
+                  </span>
+                </div>
                 {currentTrack.cover ? (
-                  <img src={currentTrack.cover} alt={currentTrack.name} />
-                ) : (
-                  <Icon name="icon-miles" size={72} />
-                )}
+                  <SafeImage
+                    src={currentTrack.cover}
+                    alt={currentTrack.name}
+                    loading="eager"
+                    fetchPriority="low"
+                    onLoad={() => setCoverReady(true)}
+                    onError={() => setCoverReady(false)}
+                  />
+                ) : null}
               </div>
 
               <div className="music-copy">
@@ -50,13 +69,13 @@ export const IslandMusic = () => {
                 <h3>{currentTrack.name || "等待歌单"}</h3>
                 <p>{currentTrack.artist || "音乐同步中"}</p>
                 <div className="music-state">
-                  {loading ? (
+                  {loading && !playlist.length ? (
                     <>
                       <Loading />
                       <span>歌单同步中</span>
                     </>
                   ) : (
-                    <span>{error || `${playlist.length} 首歌已装载`}</span>
+                    <span>{error || (loading ? "歌单后台同步中" : `${playlist.length} 首歌已装载`)}</span>
                   )}
                 </div>
               </div>
@@ -132,7 +151,21 @@ export const IslandMusic = () => {
                   </button>
                 ))
               ) : (
-                <div className="playlist-empty">{loading ? "歌单同步中" : error || "暂无歌曲"}</div>
+                <>
+                  {loading ? (
+                    <div className="playlist-skeleton" aria-label="歌单同步中">
+                      {playlistSkeletonItems.map((item) => (
+                        <span className="playlist-skeleton-row" key={item}>
+                          <i />
+                          <b />
+                          <em />
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="playlist-empty">{error || "暂无歌曲"}</div>
+                  )}
+                </>
               )}
             </div>
           </Card>
