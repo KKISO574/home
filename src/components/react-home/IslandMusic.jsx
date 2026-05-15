@@ -19,6 +19,7 @@ export const IslandMusic = () => {
     loading,
     error,
     canControl,
+    canNavigate,
     progress,
     loadedProgress,
     togglePlayback,
@@ -31,6 +32,16 @@ export const IslandMusic = () => {
   useEffect(() => {
     setCoverReady(false);
   }, [currentTrack.cover]);
+
+  useEffect(() => {
+    const activeItem = document.querySelector(".playlist-item.active");
+    if (!activeItem) return;
+
+    activeItem.scrollIntoView({
+      block: "nearest",
+      behavior: "smooth",
+    });
+  }, [currentIndex]);
 
   return (
     <section className="island-section" id="music">
@@ -105,13 +116,13 @@ export const IslandMusic = () => {
             </div>
 
             <div className="player-controls">
-              <Button type="default" disabled={!canControl} onClick={() => changeTrack(-1)}>
+              <Button type="default" disabled={!canNavigate} onClick={() => changeTrack(-1)}>
                 上一首
               </Button>
               <Button type="primary" size="large" disabled={!canControl} onClick={togglePlayback}>
                 {isPlaying ? "暂停" : "播放"}
               </Button>
-              <Button type="default" disabled={!canControl} onClick={() => changeTrack(1)}>
+              <Button type="default" disabled={!canNavigate} onClick={() => changeTrack(1)}>
                 下一首
               </Button>
             </div>
@@ -138,7 +149,7 @@ export const IslandMusic = () => {
             </div>
             <div className="playlist-list">
               {playlist.length ? (
-                playlist.slice(0, 8).map((track, index) => (
+                playlist.map((track, index) => (
                   <button
                     className={index === currentIndex ? "playlist-item active" : "playlist-item"}
                     key={`${track.name}-${track.artist}-${index}`}

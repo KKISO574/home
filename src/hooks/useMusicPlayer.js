@@ -38,7 +38,8 @@ export const useMusicPlayer = () => {
   const [error, setError] = useState("");
 
   const currentTrack = playlist[currentIndex] || defaultTrack;
-  const canControl = Boolean(currentTrack?.url && playlist.length && !error);
+  const canControl = Boolean(currentTrack?.url && playlist.length);
+  const canNavigate = Boolean(playlist.length);
 
   useEffect(() => {
     const audio = new Audio();
@@ -67,7 +68,7 @@ export const useMusicPlayer = () => {
 
     const handleError = () => {
       setIsPlaying(false);
-      setError("当前歌曲暂时无法播放");
+      setError("当前歌曲暂时无法播放，可切换下一首");
     };
 
     audio.addEventListener("timeupdate", updateTime);
@@ -224,6 +225,7 @@ export const useMusicPlayer = () => {
   const changeTrack = useCallback(
     (direction) => {
       if (!playlist.length) return;
+      setError("");
       shouldPlayOnTrackChangeRef.current = isPlaying;
       setCurrentIndex((index) => (index + direction + playlist.length) % playlist.length);
     },
@@ -233,6 +235,7 @@ export const useMusicPlayer = () => {
   const playTrack = useCallback(
     (index) => {
       if (!playlist[index]) return;
+      setError("");
       shouldPlayOnTrackChangeRef.current = true;
       setCurrentIndex(index);
       if (index === currentIndex) {
@@ -281,6 +284,7 @@ export const useMusicPlayer = () => {
     loading,
     error,
     canControl,
+    canNavigate,
     progress,
     loadedProgress,
     play,

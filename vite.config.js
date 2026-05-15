@@ -15,6 +15,7 @@ export default ({ mode }) => {
       react(),
       VitePWA({
         registerType: "autoUpdate",
+        injectRegister: false,
         workbox: {
           skipWaiting: true,
           clientsClaim: true,

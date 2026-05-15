@@ -22,13 +22,31 @@ export const IslandHero = ({ meta, clock, weatherLine, onBackToGate }) => (
           {meta.descriptionPrimary} 这里收纳近况、入口、音乐和联系方式。
         </p>
         <div className="hero-actions">
-          <Button type="primary" size="large" onClick={() => document.getElementById("links")?.scrollIntoView()}>
+          <Button
+            className="hero-action-button"
+            type="primary"
+            size="large"
+            icon={<Icon name="icon-map" size={22} />}
+            onClick={() => document.getElementById("links")?.scrollIntoView({ behavior: "smooth" })}
+          >
             常用入口
           </Button>
-          <Button type="default" size="large" onClick={() => document.getElementById("contact")?.scrollIntoView()}>
+          <Button
+            className="hero-action-button"
+            type="primary"
+            size="large"
+            icon={<Icon name="icon-chat" size={22} />}
+            onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
+          >
             联系方式
           </Button>
-          <Button type="dashed" size="large" onClick={onBackToGate}>
+          <Button
+            className="hero-action-button"
+            type="primary"
+            size="large"
+            icon={<Icon name="icon-helicopter" size={22} />}
+            onClick={onBackToGate}
+          >
             返回码头
           </Button>
         </div>

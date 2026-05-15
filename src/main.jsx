@@ -10,8 +10,20 @@ createRoot(document.getElementById("app")).render(
   </React.StrictMode>,
 );
 
-if ("serviceWorker" in navigator) {
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  let isReloadingForUpdate = false;
+
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    console.info("站点已更新，刷新后生效");
+    if (!hadController) return;
+    if (isReloadingForUpdate) return;
+    isReloadingForUpdate = true;
+    window.location.reload();
+  });
+
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js", { scope: "/" }).then((registration) => {
+      registration.update();
+    });
   });
 }

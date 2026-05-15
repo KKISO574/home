@@ -59,10 +59,26 @@ export const IslandOverview = ({
           <Card className="notice-card" type="default">
             <Tabs items={tabItems} defaultActiveKey="quote" />
             <div className="notice-actions">
-              <Button size="small" type="primary" loading={quoteLoading} onClick={onRefreshQuote}>
+              <Button
+                className="notice-action-button"
+                size="middle"
+                type="primary"
+                icon={<Icon name="icon-chat" size={18} />}
+                aria-busy={quoteLoading}
+                aria-disabled={quoteLoading}
+                onClick={quoteLoading ? undefined : onRefreshQuote}
+              >
                 刷新摘录
               </Button>
-              <Button size="small" type="default" loading={weatherLoading} onClick={onRefreshWeather}>
+              <Button
+                className="notice-action-button"
+                size="middle"
+                type="primary"
+                icon={<Icon name="icon-map" size={18} />}
+                aria-busy={weatherLoading}
+                aria-disabled={weatherLoading}
+                onClick={weatherLoading ? undefined : onRefreshWeather}
+              >
                 同步天气
               </Button>
             </div>
