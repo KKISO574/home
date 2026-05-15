@@ -87,9 +87,10 @@ const loadPlaylist = async () => {
       audio.setLyric("选择一首开始播放");
     }
   } catch (error) {
-    console.error("播放器加载失败:", error);
     audio.setReady(false);
     audio.setPlaylist([]);
+    audio.setTrack(null, 0);
+    audio.setLyric("歌单暂时无法装载");
     audio.resetTimeline();
     ElMessage({
       message: "播放器加载失败",
@@ -150,7 +151,9 @@ const playToggle = () => {
 };
 
 const changeVolume = (value) => {
-  player.value?.setVolume(value, false);
+  const nextVolume = Number(value);
+  if (!Number.isFinite(nextVolume)) return;
+  player.value?.setVolume(Math.min(Math.max(nextVolume, 0), 1), false);
 };
 
 const changeSong = (direction) => {

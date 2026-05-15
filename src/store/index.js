@@ -49,7 +49,10 @@ export const mainStore = defineStore("audio", {
       this.lyric = value;
     },
     setVolume(value) {
-      this.volume = value;
+      const nextVolume = Number(value);
+      if (Number.isFinite(nextVolume)) {
+        this.volume = Math.min(Math.max(nextVolume, 0), 1);
+      }
     },
     setTimeline(payload = {}) {
       if (Number.isFinite(payload.currentTime)) {

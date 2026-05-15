@@ -32,7 +32,6 @@
           <li>{{ dateLine }}</li>
           <li>{{ timeLine }}</li>
           <li>{{ weatherLine || "天气数据更新中" }}</li>
-          <li>近况 / 音乐 / 联系 / 入口</li>
         </ul>
       </div>
 
@@ -117,7 +116,7 @@ const stageStyle = computed(() => ({
 }));
 
 const onPointerMove = (event) => {
-  if (!stageRef.value) return;
+  if (!stageRef.value || event.pointerType === "touch") return;
   const rect = stageRef.value.getBoundingClientRect();
   const relativeX = (event.clientX - rect.left) / rect.width;
   const relativeY = (event.clientY - rect.top) / rect.height;
@@ -143,15 +142,17 @@ const onPointerLeave = () => {
   position: relative;
   overflow: hidden;
   min-height: 560px;
-  border-radius: 8px;
-  border: 1px solid rgb(255 255 255 / 0.1);
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0.012)),
-    rgb(8 13 22 / 0.78);
+  border-radius: var(--radius-panel);
+  border: var(--panel-border);
+  background: var(--panel-bg);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.04),
-    0 26px 60px rgb(0 0 0 / 0.24);
-  backdrop-filter: blur(18px);
+    var(--shadow-panel);
+}
+
+.signal-stage,
+.signal-stage * {
+  min-width: 0;
 }
 
 .signal-stage::before {
@@ -174,12 +175,7 @@ const onPointerLeave = () => {
 
 .signal-base-grid,
 .signal-hidden-grid {
-  padding: 28px;
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 18px 24px;
-  align-content: stretch;
-  user-select: none;
+  display: none;
 }
 
 .signal-base-grid {
@@ -191,61 +187,63 @@ const onPointerLeave = () => {
 }
 
 .signal-stage.is-active .signal-base-grid {
-  opacity: 1;
+  opacity: 0.55;
 }
 
 .signal-base-grid span,
 .signal-hidden-grid span {
   justify-self: center;
   align-self: center;
-  font-size: clamp(2rem, 4.2vw, 4.8rem);
+  font-size: clamp(1.6rem, 3.4vw, 3.8rem);
   font-weight: 700;
   letter-spacing: 0.06em;
 }
 
 .signal-base-grid span {
-  color: rgb(255 255 255 / 0.045);
+  color: rgb(255 255 255 / 0.028);
 }
 
 .signal-hidden-grid {
-  color: rgb(244 248 255 / 0.22);
+  color: rgb(244 248 255 / 0.09);
   transform: translate3d(calc(var(--delta-x) * 0.18), calc(var(--delta-y) * 0.18), 0);
   opacity: 0;
   transition:
     opacity 0.24s ease,
     transform 0.12s ease;
   mask-image: radial-gradient(
-    220px circle at var(--pointer-x) var(--pointer-y),
-    rgb(0 0 0 / 0.96) 0,
-    rgb(0 0 0 / 0.96) 36%,
-    transparent 68%
+    180px circle at var(--pointer-x) var(--pointer-y),
+    rgb(0 0 0 / 0.82) 0,
+    rgb(0 0 0 / 0.72) 28%,
+    transparent 66%
   );
   -webkit-mask-image: radial-gradient(
-    220px circle at var(--pointer-x) var(--pointer-y),
-    rgb(0 0 0 / 0.96) 0,
-    rgb(0 0 0 / 0.96) 36%,
-    transparent 68%
+    180px circle at var(--pointer-x) var(--pointer-y),
+    rgb(0 0 0 / 0.82) 0,
+    rgb(0 0 0 / 0.72) 28%,
+    transparent 66%
   );
 }
 
 .signal-stage.is-active .signal-hidden-grid {
-  opacity: 1;
+  opacity: 0.7;
 }
 
 .signal-glow {
+  z-index: 0;
   background:
     radial-gradient(
       260px circle at var(--pointer-x) var(--pointer-y),
-      rgb(102 231 216 / 0.16),
-      rgb(255 255 255 / 0.05) 32%,
+      rgb(102 231 216 / 0.11),
+      rgb(255 255 255 / 0.035) 30%,
       transparent 72%
     );
   mix-blend-mode: screen;
+  pointer-events: none;
 }
 
 .signal-layout {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   padding: 52px 56px;
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.92fr);
@@ -255,6 +253,8 @@ const onPointerLeave = () => {
 
 .signal-copy {
   max-width: 720px;
+  position: relative;
+  z-index: 2;
 }
 
 .signal-kicker {
@@ -267,9 +267,10 @@ const onPointerLeave = () => {
 
 .signal-title {
   margin: 0;
-  font-size: clamp(4rem, 8vw, 6.8rem);
+  font-size: clamp(3.4rem, 7.6vw, 6.8rem);
   line-height: 0.92;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
 .signal-summary {
@@ -278,6 +279,7 @@ const onPointerLeave = () => {
   color: var(--text-soft);
   font-size: 1.18rem;
   line-height: 1.8;
+  overflow-wrap: anywhere;
 }
 
 .signal-actions {
@@ -300,6 +302,12 @@ const onPointerLeave = () => {
     transform 0.22s ease,
     border-color 0.22s ease,
     background-color 0.22s ease;
+}
+
+.signal-button:hover,
+.signal-button:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgb(102 231 216 / 0.36);
 }
 
 .signal-button.primary {
@@ -329,7 +337,8 @@ const onPointerLeave = () => {
   background: rgb(255 255 255 / 0.04);
   color: var(--text-soft);
   font-size: 0.9rem;
-  backdrop-filter: blur(12px);
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .signal-visual {
@@ -339,6 +348,7 @@ const onPointerLeave = () => {
 
 .signal-orb {
   position: relative;
+  z-index: 2;
   width: clamp(280px, 32vw, 420px);
   aspect-ratio: 1;
   display: flex;
@@ -355,7 +365,7 @@ const onPointerLeave = () => {
   box-shadow:
     0 0 0 1px rgb(255 255 255 / 0.04),
     0 24px 64px rgb(0 0 0 / 0.26);
-  transform: translate3d(calc(var(--delta-x) * 0.2), calc(var(--delta-y) * 0.16), 0);
+  transform: translate3d(calc(var(--delta-x) * 0.08), calc(var(--delta-y) * 0.06), 0);
   transition: transform 0.14s ease;
   overflow: hidden;
 }
@@ -386,8 +396,11 @@ const onPointerLeave = () => {
 .orb-word {
   font-size: clamp(2.4rem, 5vw, 4.2rem);
   line-height: 1;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
   color: rgb(244 248 255 / 0.96);
+  max-width: 86%;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 .orb-subtitle {
@@ -427,7 +440,7 @@ const onPointerLeave = () => {
   }
 
   .signal-title {
-    font-size: 4.2rem;
+    font-size: clamp(3rem, 12vw, 4.2rem);
   }
 }
 
@@ -458,11 +471,12 @@ const onPointerLeave = () => {
   }
 
   .signal-title {
-    font-size: 3rem;
+    font-size: clamp(2.55rem, 13.5vw, 3rem);
   }
 
   .signal-summary {
     font-size: 1rem;
+    line-height: 1.65;
   }
 
   .signal-orb {

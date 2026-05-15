@@ -7,6 +7,9 @@
       :site-author="siteAuthor"
       :site-url-text="siteUrlText"
       :weather-line="weatherLine"
+      :user-coordinate="userCoordinate"
+      :location-label="locationLabel"
+      :location-source="locationSource"
       @enter="enterHome"
     />
 
@@ -79,7 +82,7 @@ import { checkDays } from "@/utils/getTime.js";
 
 const meta = useSiteMeta();
 const { dateLine, timeLine, hourValue } = useClock();
-const { weatherLine } = useWeather();
+const { weatherLine, locationState } = useWeather();
 const { quote, refreshQuote } = useHitokoto();
 const { capsuleList, siteAge } = useTimeCapsule(meta.startDate.value);
 const { siteName, siteAuthor, siteUrl, siteUrlText, siteLogo, siteIcp, descriptionPrimary } = meta;
@@ -93,6 +96,13 @@ const heroSummary = computed(() => {
   const fragments = [descriptionPrimary.value, "记录近况、常用入口和联系方式。"].filter(Boolean);
   return fragments.join(" ");
 });
+
+const userCoordinate = computed(() => ({
+  latitude: locationState.value.latitude,
+  longitude: locationState.value.longitude,
+}));
+const locationLabel = computed(() => locationState.value.label || "当前位置");
+const locationSource = computed(() => locationState.value.source || "fallback");
 
 const ambientImage = computed(() => {
   if (hourValue.value < 7) return "/images/background8.jpg";

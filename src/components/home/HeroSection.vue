@@ -90,7 +90,7 @@ defineProps({
   display: flex;
   flex-direction: column;
   gap: 24px;
-  padding: 20px 0 36px;
+  padding: clamp(18px, 3svh, 20px) 0 36px;
 }
 
 .hero-topbar,
@@ -110,6 +110,7 @@ defineProps({
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
 }
 
 .brand-logo {
@@ -125,6 +126,7 @@ defineProps({
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .brand-role {
@@ -137,6 +139,9 @@ defineProps({
 .brand-domain {
   font-size: 0.98rem;
   color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hero-nav {
@@ -147,6 +152,14 @@ defineProps({
 
   a {
     color: var(--text-soft);
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  a:hover,
+  a:focus-visible {
+    color: var(--text-main);
   }
 }
 
@@ -175,20 +188,34 @@ defineProps({
 
 @media (max-width: 720px) {
   .hero-shell {
+    min-height: auto;
     padding-bottom: 28px;
   }
 
   .hero-topbar {
-    flex-direction: column;
     align-items: flex-start;
   }
 
   .hero-nav {
     gap: 16px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: 52%;
   }
 
   .hero-stage-wrap {
     padding-top: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .hero-topbar {
+    flex-direction: column;
+  }
+
+  .hero-nav {
+    max-width: 100%;
+    justify-content: flex-start;
   }
 }
 </style>

@@ -69,11 +69,13 @@ defineProps({
   gap: 14px;
   color: var(--text-soft);
   font-size: 0.9rem;
+  min-width: 0;
 }
 
 .footer-copy a,
 .footer-track span {
   color: var(--text-soft);
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 720px) {

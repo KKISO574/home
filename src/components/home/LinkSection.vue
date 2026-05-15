@@ -109,17 +109,15 @@ const getHost = (url) => {
 .link-tile {
   min-height: 138px;
   padding: 20px;
-  border-radius: 8px;
-  border: 1px solid rgb(255 255 255 / 0.1);
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0.02)),
-    rgb(8 13 22 / 0.7);
+  border-radius: var(--radius-panel);
+  border: var(--panel-border);
+  background: var(--panel-bg);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 18px;
-  box-shadow: 0 16px 42px rgb(0 0 0 / 0.22);
-  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-panel);
+  min-width: 0;
 }
 
 .link-tile:hover,
@@ -159,14 +157,20 @@ const getHost = (url) => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
 
   strong {
     font-size: 1.08rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   span {
     color: var(--text-soft);
-    word-break: break-all;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 

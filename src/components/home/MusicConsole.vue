@@ -13,7 +13,13 @@
         <p class="panel-summary">保留几首最近常听的歌。</p>
       </div>
 
-      <button class="queue-toggle" :class="{ active: playlistOpen }" type="button" @click="togglePlaylist">
+      <button
+        class="queue-toggle"
+        :class="{ active: playlistOpen }"
+        type="button"
+        :disabled="!playlist.length"
+        @click="togglePlaylist"
+      >
         <span>{{ playlistOpen ? "收起歌单" : "查看歌单" }}</span>
         <span class="queue-count">{{ playlist.length }}</span>
       </button>
@@ -65,6 +71,7 @@
                 min="0"
                 max="100"
                 step="0.1"
+                :disabled="!audio.duration"
                 @input="handleSeek"
               />
             </div>
@@ -72,16 +79,16 @@
 
           <div class="control-strip">
             <div class="transport-cluster">
-              <button class="transport-button" type="button" aria-label="上一首" @click="changeSong(0)">
+              <button class="transport-button" type="button" aria-label="上一首" :disabled="!canControl" @click="changeSong(0)">
                 <GoStart theme="filled" size="20" fill="currentColor" />
               </button>
 
-              <button class="play-button" type="button" aria-label="播放切换" @click="togglePlayback">
+              <button class="play-button" type="button" aria-label="播放切换" :disabled="!canControl" @click="togglePlayback">
                 <Pause v-if="audio.isPlaying" theme="filled" size="24" fill="currentColor" />
                 <PlayOne v-else theme="filled" size="24" fill="currentColor" />
               </button>
 
-              <button class="transport-button" type="button" aria-label="下一首" @click="changeSong(1)">
+              <button class="transport-button" type="button" aria-label="下一首" :disabled="!canControl" @click="changeSong(1)">
                 <GoEnd theme="filled" size="20" fill="currentColor" />
               </button>
             </div>
@@ -204,6 +211,7 @@ const playerData = {
 const playlist = computed(() => audio.playlist || []);
 const trackTitle = computed(() => audio.currentTrack.name || "等待曲目");
 const trackArtist = computed(() => audio.currentTrack.artist || "等待播放");
+const canControl = computed(() => audio.ready && playlist.value.length > 0);
 const hasMatchedHeight = computed(() => Number.isFinite(props.panelHeight) && props.panelHeight > 0);
 const isExpandedAligned = computed(() => playlistOpen.value && hasMatchedHeight.value);
 const panelStyle = computed(() => {
@@ -240,10 +248,12 @@ const currentTimeText = computed(() => formatTime(audio.currentTime));
 const durationText = computed(() => formatTime(audio.duration));
 
 const togglePlayback = () => {
+  if (!canControl.value) return;
   playerRef.value?.playToggle();
 };
 
 const changeSong = (direction) => {
+  if (!canControl.value) return;
   playerRef.value?.changeSong(direction);
   nextTick(() => {
     setActiveTarget(trackTitle.value);
@@ -251,6 +261,7 @@ const changeSong = (direction) => {
 };
 
 const playTrack = (index) => {
+  if (!canControl.value) return;
   playerRef.value?.playTrack(index);
   if (playlist.value[index]?.name) {
     setActiveTarget(playlist.value[index].name);
@@ -258,6 +269,7 @@ const playTrack = (index) => {
 };
 
 const togglePlaylist = () => {
+  if (!playlist.value.length) return;
   playlistOpen.value = !playlistOpen.value;
 };
 
@@ -298,15 +310,13 @@ watch(trackTitle, (value) => {
   height: var(--panel-height, auto);
   min-height: 0;
   padding: 24px;
-  border-radius: 8px;
-  border: 1px solid rgb(255 255 255 / 0.1);
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.018)),
-    rgb(8 13 22 / 0.78);
+  border-radius: var(--radius-panel);
+  border: var(--panel-border);
+  background: var(--panel-bg);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.05),
-    0 24px 60px rgb(0 0 0 / 0.26);
-  backdrop-filter: blur(20px);
+    var(--shadow-panel);
+  min-width: 0;
 }
 
 .audio-panel::before,
@@ -391,6 +401,13 @@ watch(trackTitle, (value) => {
 
 .queue-toggle.active {
   border-color: rgb(255 255 255 / 0.18);
+  color: var(--text-main);
+}
+
+.queue-toggle:hover:not(:disabled),
+.queue-toggle:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgb(102 231 216 / 0.34);
   color: var(--text-main);
 }
 
@@ -543,6 +560,9 @@ watch(trackTitle, (value) => {
   margin-top: 8px;
   color: rgb(220 233 255 / 0.74);
   font-size: 1.02rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .track-lyric {
@@ -551,6 +571,10 @@ watch(trackTitle, (value) => {
   color: var(--text-soft);
   line-height: 1.5;
   font-size: 0.94rem;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .timeline-shell {
@@ -666,6 +690,17 @@ watch(trackTitle, (value) => {
   border: none;
   color: var(--text-main);
   border-radius: 50%;
+  transition:
+    transform var(--duration-fast) ease,
+    background-color var(--duration-fast) ease,
+    opacity var(--duration-fast) ease;
+}
+
+.transport-button:hover:not(:disabled),
+.transport-button:focus-visible,
+.play-button:hover:not(:disabled),
+.play-button:focus-visible {
+  transform: translateY(-1px);
 }
 
 .transport-button {
@@ -826,6 +861,7 @@ watch(trackTitle, (value) => {
     transform 0.18s ease,
     border-color 0.18s ease,
     background-color 0.18s ease;
+  cursor: pointer;
 }
 
 .queue-item:hover {
@@ -984,7 +1020,7 @@ watch(trackTitle, (value) => {
   }
 
   .stage-copy h3 {
-    font-size: 2.1rem;
+    font-size: clamp(1.6rem, 11vw, 2.1rem);
   }
 
   .control-strip {
@@ -995,6 +1031,10 @@ watch(trackTitle, (value) => {
   .volume-cluster {
     width: 100%;
     justify-content: center;
+  }
+
+  .volume-track {
+    min-width: 0;
   }
 
   .queue-item {

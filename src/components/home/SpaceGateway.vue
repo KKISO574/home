@@ -1,7 +1,8 @@
 <template>
-  <section ref="gatewayRef" class="space-gateway" :class="{ 'is-entering': isEntering }" :style="gatewayStyle">
+  <section ref="gatewayRef" class="space-gateway" :class="{ 'is-entering': isEntering }" :style="coordinateStyle">
     <div class="starfield starfield-far" aria-hidden="true" />
     <div class="starfield starfield-near" aria-hidden="true" />
+    <div class="cursor-light" aria-hidden="true" />
     <div class="space-rings" aria-hidden="true">
       <span />
       <span />
@@ -13,7 +14,7 @@
         <span class="brand-signal">Celia Orbit</span>
         <strong>{{ siteUrlText }}</strong>
       </div>
-      <span class="gateway-location">Anhui Huainan / China</span>
+      <span class="gateway-location">{{ gatewayLocation }}</span>
     </div>
 
     <div class="gateway-center">
@@ -27,7 +28,7 @@
           <div class="earth-grid" />
           <span class="huainan-pin">
             <span class="pin-dot" />
-            <span class="pin-label">淮南 32.63°N 117.00°E</span>
+            <span class="pin-label">{{ markerLabel }} {{ coordinateLabel }}</span>
           </span>
         </div>
       </div>
@@ -35,7 +36,7 @@
       <div class="gateway-copy">
         <p class="gateway-kicker">Personal home from low earth orbit</p>
         <h1>{{ siteName }}</h1>
-        <p class="gateway-summary">从太空进入这座小站，落点定位在安徽淮南。</p>
+        <p class="gateway-summary">从太空进入这座小站，落点定位在{{ markerLabel }}。</p>
 
         <button class="enter-button" type="button" :disabled="isEntering" @click="enter">
           <span>{{ isEntering ? "正在进入" : "进入主页" }}</span>
@@ -47,7 +48,7 @@
     <div class="gateway-bottom">
       <span>{{ siteAuthor }}</span>
       <span>{{ weatherLine || "轨道信号同步中" }}</span>
-      <span>Huainan lock acquired</span>
+      <span>{{ sourceLabel }}</span>
     </div>
   </section>
 </template>
@@ -55,7 +56,7 @@
 <script setup>
 const emit = defineEmits(["enter"]);
 
-defineProps({
+const props = defineProps({
   siteName: {
     type: String,
     required: true,
@@ -72,28 +73,139 @@ defineProps({
     type: String,
     default: "",
   },
+  userCoordinate: {
+    type: Object,
+    default: null,
+  },
+  locationLabel: {
+    type: String,
+    default: "淮南",
+  },
+  locationSource: {
+    type: String,
+    default: "fallback",
+  },
 });
 
 const gatewayRef = ref(null);
-const pointerX = ref(50);
-const pointerY = ref(50);
 const isEntering = ref(false);
 
 let enterTimer = 0;
+let pointerFrame = 0;
+let gatewayRect = null;
+let nextPointer = {
+  x: 50,
+  y: 50,
+  px: 0,
+  py: 0,
+};
 
-const gatewayStyle = computed(() => ({
-  "--gateway-x": `${pointerX.value}%`,
-  "--gateway-y": `${pointerY.value}%`,
-  "--gateway-dx": `${(pointerX.value - 50) * 0.8}px`,
-  "--gateway-dy": `${(pointerY.value - 50) * 0.6}px`,
+const fallbackCoordinate = {
+  latitude: 32.62639,
+  longitude: 116.99694,
+};
+
+const earthMapScale = {
+  x: 2.58,
+  y: 1.29,
+};
+
+const markerAnchor = {
+  x: 0.52,
+  y: 0.42,
+};
+
+const isValidCoordinate = (coordinate) =>
+  coordinate &&
+  Number.isFinite(coordinate.latitude) &&
+  Number.isFinite(coordinate.longitude) &&
+  coordinate.latitude >= -90 &&
+  coordinate.latitude <= 90 &&
+  coordinate.longitude >= -180 &&
+  coordinate.longitude <= 180;
+
+const activeCoordinate = computed(() =>
+  isValidCoordinate(props.userCoordinate) ? props.userCoordinate : fallbackCoordinate,
+);
+
+const mapPoint = computed(() => ({
+  x: (activeCoordinate.value.longitude + 180) / 360,
+  y: (90 - activeCoordinate.value.latitude) / 180,
 }));
+
+const earthMapView = computed(() => {
+  const offsetX = markerAnchor.x - mapPoint.value.x * earthMapScale.x;
+  const offsetY = markerAnchor.y - mapPoint.value.y * earthMapScale.y;
+
+  return {
+    offsetX,
+    offsetY,
+    backgroundX: (offsetX / (1 - earthMapScale.x)) * 100,
+    backgroundY: (offsetY / (1 - earthMapScale.y)) * 100,
+  };
+});
+
+const markerPoint = computed(() => {
+  return {
+    x: (earthMapView.value.offsetX + mapPoint.value.x * earthMapScale.x) * 100,
+    y: (earthMapView.value.offsetY + mapPoint.value.y * earthMapScale.y) * 100,
+  };
+});
+
+const coordinateLabel = computed(() => {
+  const latitude = Math.abs(activeCoordinate.value.latitude).toFixed(2);
+  const longitude = Math.abs(activeCoordinate.value.longitude).toFixed(2);
+  const latitudeHemisphere = activeCoordinate.value.latitude >= 0 ? "N" : "S";
+  const longitudeHemisphere = activeCoordinate.value.longitude >= 0 ? "E" : "W";
+  return `${latitude}°${latitudeHemisphere} ${longitude}°${longitudeHemisphere}`;
+});
+
+const markerLabel = computed(() => props.locationLabel || "当前位置");
+const gatewayLocation = computed(() => `${markerLabel.value} / Earth`);
+const sourceLabel = computed(() => {
+  if (props.locationSource === "amap-ip") return "高德网络定位";
+  if (props.locationSource === "backup") return "备用天气定位";
+  return "淮南默认落点";
+});
+
+const earthBackgroundPosition = computed(() => {
+  return `${earthMapView.value.backgroundX}% ${earthMapView.value.backgroundY}%`;
+});
+
+const coordinateStyle = computed(() => ({
+  "--earth-bg-position": earthBackgroundPosition.value,
+  "--marker-x": `${markerPoint.value.x}%`,
+  "--marker-y": `${markerPoint.value.y}%`,
+}));
+
+const commitPointer = () => {
+  pointerFrame = 0;
+  if (!gatewayRef.value) return;
+
+  gatewayRef.value.style.setProperty("--gateway-dx", `${(nextPointer.x - 50) * 0.8}px`);
+  gatewayRef.value.style.setProperty("--gateway-dy", `${(nextPointer.y - 50) * 0.6}px`);
+  gatewayRef.value.style.setProperty("--cursor-x", `${nextPointer.px}px`);
+  gatewayRef.value.style.setProperty("--cursor-y", `${nextPointer.py}px`);
+};
+
+const syncGatewayRect = () => {
+  gatewayRect = gatewayRef.value?.getBoundingClientRect() || null;
+};
 
 const updatePointer = (event) => {
   if (!gatewayRef.value || event.pointerType === "touch") return;
 
-  const rect = gatewayRef.value.getBoundingClientRect();
-  pointerX.value = ((event.clientX - rect.left) / rect.width) * 100;
-  pointerY.value = ((event.clientY - rect.top) / rect.height) * 100;
+  const rect = gatewayRect || gatewayRef.value.getBoundingClientRect();
+  nextPointer = {
+    x: ((event.clientX - rect.left) / rect.width) * 100,
+    y: ((event.clientY - rect.top) / rect.height) * 100,
+    px: event.clientX - rect.left,
+    py: event.clientY - rect.top,
+  };
+
+  if (!pointerFrame) {
+    pointerFrame = window.requestAnimationFrame(commitPointer);
+  }
 };
 
 const enter = () => {
@@ -101,21 +213,30 @@ const enter = () => {
   isEntering.value = true;
   enterTimer = window.setTimeout(() => {
     emit("enter");
-  }, 920);
+  }, 360);
 };
 
 onMounted(() => {
+  syncGatewayRect();
   window.addEventListener("pointermove", updatePointer);
+  window.addEventListener("resize", syncGatewayRect);
 });
 
 onBeforeUnmount(() => {
   window.clearTimeout(enterTimer);
+  window.cancelAnimationFrame(pointerFrame);
   window.removeEventListener("pointermove", updatePointer);
+  window.removeEventListener("resize", syncGatewayRect);
 });
 </script>
 
 <style lang="scss" scoped>
 .space-gateway {
+  --gateway-dx: 0px;
+  --gateway-dy: 0px;
+  --cursor-x: 50vw;
+  --cursor-y: 50vh;
+
   position: fixed;
   inset: 0;
   z-index: 10;
@@ -123,23 +244,29 @@ onBeforeUnmount(() => {
   overflow: hidden;
   display: grid;
   grid-template-rows: auto 1fr auto;
-  padding: 28px clamp(18px, 4vw, 56px);
+  padding: clamp(18px, 3svh, 28px) clamp(18px, 4vw, 56px);
   background:
-    radial-gradient(circle at var(--gateway-x) var(--gateway-y), rgb(102 231 216 / 0.12), transparent 28%),
     radial-gradient(circle at 70% 18%, rgb(125 183 255 / 0.13), transparent 28%),
     radial-gradient(circle at 18% 80%, rgb(245 185 113 / 0.08), transparent 24%),
     #030711;
   color: var(--text-main);
   transition:
-    opacity 0.6s ease,
-    transform 0.92s cubic-bezier(0.18, 0.8, 0.2, 1),
-    filter 0.92s ease;
+    opacity 0.32s ease,
+    transform 0.36s cubic-bezier(0.2, 0.8, 0.2, 1);
+  contain: layout paint style;
+  isolation: isolate;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.space-gateway,
+.space-gateway * {
+  min-width: 0;
 }
 
 .space-gateway.is-entering {
   opacity: 0;
-  transform: scale(1.08);
-  filter: blur(8px);
+  transform: translateY(-10px) scale(0.992);
   pointer-events: none;
 }
 
@@ -147,15 +274,15 @@ onBeforeUnmount(() => {
 .space-gateway.is-entering .gateway-copy,
 .space-gateway.is-entering .gateway-bottom {
   opacity: 0;
-  transform: translateY(-12px);
+  transform: translateY(-8px);
 }
 
 .space-gateway.is-entering .earth-shell {
-  transform: scale(3.25) translate3d(calc(var(--gateway-dx) * 0.06), calc(var(--gateway-dy) * 0.04), 0);
-  filter: saturate(1.18) brightness(1.08);
+  transform: scale(1.08) translate3d(calc(var(--gateway-dx) * 0.03), calc(var(--gateway-dy) * 0.02), 0);
 }
 
 .starfield,
+.cursor-light,
 .space-rings,
 .earth-shell::before {
   position: absolute;
@@ -165,7 +292,8 @@ onBeforeUnmount(() => {
 
 .starfield {
   background-repeat: repeat;
-  transform: translate3d(calc(var(--gateway-dx) * -0.18), calc(var(--gateway-dy) * -0.18), 0);
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .starfield-far {
@@ -189,7 +317,20 @@ onBeforeUnmount(() => {
     42px 28px,
     180px 110px;
   opacity: 0.56;
-  transform: translate3d(calc(var(--gateway-dx) * -0.42), calc(var(--gateway-dy) * -0.42), 0);
+}
+
+.cursor-light {
+  inset: auto;
+  left: 0;
+  top: 0;
+  width: 440px;
+  height: 440px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(102 231 216 / 0.13), rgb(125 183 255 / 0.05) 32%, transparent 70%);
+  opacity: 0.68;
+  transform: translate3d(calc(var(--cursor-x) - 220px), calc(var(--cursor-y) - 220px), 0);
+  backface-visibility: hidden;
+  will-change: transform;
 }
 
 .space-rings {
@@ -235,6 +376,14 @@ onBeforeUnmount(() => {
     transform 0.42s ease;
 }
 
+.gateway-top > *,
+.gateway-bottom > * {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .gateway-brand {
   display: flex;
   flex-direction: column;
@@ -264,27 +413,28 @@ onBeforeUnmount(() => {
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 28px;
+  gap: clamp(14px, 2.4svh, 28px);
   text-align: center;
 }
 
 .earth-shell {
   position: relative;
-  width: min(70vw, 430px);
+  width: min(64vw, 430px, 42svh);
   aspect-ratio: 1;
   display: grid;
   place-items: center;
   transform: translate3d(calc(var(--gateway-dx) * 0.16), calc(var(--gateway-dy) * 0.12), 0);
   transition:
-    filter 0.92s ease,
-    transform 0.92s cubic-bezier(0.18, 0.8, 0.2, 1);
+    transform 0.36s cubic-bezier(0.2, 0.8, 0.2, 1);
+  backface-visibility: hidden;
+  will-change: transform;
 }
 
 .earth-shell::before {
   content: "";
   border-radius: 50%;
   background: radial-gradient(circle, rgb(102 231 216 / 0.2), transparent 58%);
-  filter: blur(18px);
+  opacity: 0.8;
 }
 
 .earth-glow {
@@ -295,7 +445,7 @@ onBeforeUnmount(() => {
   background:
     radial-gradient(circle at 34% 28%, rgb(244 248 255 / 0.34), transparent 14%),
     radial-gradient(circle, rgb(102 231 216 / 0.18), transparent 62%);
-  filter: blur(18px);
+  opacity: 0.82;
 }
 
 .earth {
@@ -341,14 +491,14 @@ onBeforeUnmount(() => {
 
 .earth-map {
   position: absolute;
-  inset: -2%;
+  inset: 0;
   z-index: 1;
   border-radius: 50%;
   background-image: url("/images/earth-blue-marble-april.jpg");
   background-size: 258% 129%;
-  background-position: 100% 0%;
+  background-position: var(--earth-bg-position);
+  background-repeat: repeat-x;
   filter: saturate(1.14) contrast(1.04) brightness(0.9);
-  transform: scale(1.02);
 }
 
 .earth-clouds {
@@ -362,7 +512,7 @@ onBeforeUnmount(() => {
     linear-gradient(102deg, transparent 0 32%, rgb(255 255 255 / 0.14) 44%, transparent 58%);
   filter: blur(7px);
   opacity: 0.58;
-  animation: cloudDrift 18s linear infinite;
+  animation: cloudDrift 24s linear infinite;
 }
 
 .earth-grid {
@@ -381,13 +531,16 @@ onBeforeUnmount(() => {
 .huainan-pin {
   position: absolute;
   z-index: 6;
-  left: 55%;
-  top: 41%;
+  left: var(--marker-x);
+  top: var(--marker-y);
   display: flex;
   align-items: center;
   gap: 8px;
   color: var(--text-main);
   transform: translate(-50%, -50%);
+  transition:
+    left 0.42s ease,
+    top 0.42s ease;
 }
 
 .pin-dot {
@@ -415,6 +568,7 @@ onBeforeUnmount(() => {
   background: rgb(3 7 17 / 0.58);
   backdrop-filter: blur(12px);
   font-size: 0.82rem;
+  white-space: nowrap;
 }
 
 .earth-orbit {
@@ -448,20 +602,22 @@ onBeforeUnmount(() => {
 
 .gateway-copy h1 {
   margin: 0;
-  font-size: clamp(3.6rem, 9vw, 8rem);
+  font-size: clamp(3.6rem, 7vw, 7rem);
   line-height: 0.88;
+  overflow-wrap: anywhere;
 }
 
 .gateway-summary {
   max-width: 620px;
-  margin-top: 22px;
+  margin-top: clamp(14px, 2svh, 22px);
   color: rgb(220 233 255 / 0.76);
   font-size: clamp(1rem, 2vw, 1.18rem);
   line-height: 1.8;
+  overflow-wrap: anywhere;
 }
 
 .enter-button {
-  margin-top: 30px;
+  margin-top: clamp(18px, 2.8svh, 30px);
   min-height: 58px;
   padding: 0 10px 0 24px;
   display: inline-flex;
@@ -538,19 +694,52 @@ onBeforeUnmount(() => {
 
   .gateway-top {
     align-items: flex-start;
+    gap: 12px;
   }
 
   .gateway-location {
-    max-width: 130px;
+    max-width: 46%;
     text-align: right;
   }
 
   .earth-shell {
-    width: min(86vw, 360px);
+    width: min(86vw, 360px, 42svh);
   }
 
   .gateway-copy h1 {
-    font-size: clamp(3.1rem, 16vw, 5rem);
+    font-size: clamp(2.7rem, 16vw, 4.4rem);
+  }
+
+  .gateway-summary {
+    font-size: 0.96rem;
+    line-height: 1.65;
+  }
+
+  .gateway-bottom {
+    gap: 8px 14px;
+  }
+
+  .gateway-bottom > * {
+    max-width: 100%;
+  }
+}
+
+@media (max-height: 720px) and (min-width: 721px) {
+  .earth-shell {
+    width: min(52vw, 330px, 36svh);
+  }
+
+  .gateway-copy h1 {
+    font-size: clamp(3rem, 6vw, 5.4rem);
+  }
+
+  .gateway-summary {
+    margin-top: 12px;
+  }
+
+  .enter-button {
+    margin-top: 16px;
+    min-height: 52px;
   }
 }
 </style>

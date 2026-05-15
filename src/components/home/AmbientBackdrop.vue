@@ -5,7 +5,7 @@
     :style="backdropStyle"
     aria-hidden="true"
   >
-    <img class="ambient-image" :src="image" alt="" />
+    <img class="ambient-image" :src="image" alt="" decoding="async" @error="hideBrokenImage" />
     <div class="ambient-mesh" />
     <div class="ambient-focus" />
     <div class="ambient-rings" />
@@ -107,6 +107,10 @@ const pointerActive = ref(false);
 const ripples = ref([]);
 
 let frameId = 0;
+
+const hideBrokenImage = (event) => {
+  event.target.style.opacity = "0";
+};
 
 const nodes = [
   { id: "n1", top: "14%", left: "10%", size: 8, depth: 0.72, delay: "0s" },
@@ -213,12 +217,12 @@ const activeLinks = computed(() =>
     .filter((link) => link.opacity > 0.04),
 );
 
-const animatePointer = () => {
-  renderX.value += (pointerX.value - renderX.value) * 0.14;
-  renderY.value += (pointerY.value - renderY.value) * 0.14;
-  driftX.value += (targetDriftX.value - driftX.value) * 0.12;
-  driftY.value += (targetDriftY.value - driftY.value) * 0.12;
-  frameId = window.requestAnimationFrame(animatePointer);
+const commitPointer = () => {
+  frameId = 0;
+  renderX.value = pointerX.value;
+  renderY.value = pointerY.value;
+  driftX.value = targetDriftX.value;
+  driftY.value = targetDriftY.value;
 };
 
 const updatePointer = (event) => {
@@ -232,6 +236,10 @@ const updatePointer = (event) => {
   targetDriftX.value = (x - 0.5) * 56;
   targetDriftY.value = (y - 0.5) * 48;
   pointerActive.value = true;
+
+  if (!frameId) {
+    frameId = window.requestAnimationFrame(commitPointer);
+  }
 };
 
 const createRipple = (event) => {
@@ -253,6 +261,10 @@ const resetPointer = () => {
   pointerY.value = 34;
   targetDriftX.value = 0;
   targetDriftY.value = 0;
+  renderX.value = pointerX.value;
+  renderY.value = pointerY.value;
+  driftX.value = 0;
+  driftY.value = 0;
   pointerActive.value = false;
 };
 
@@ -268,7 +280,6 @@ const backdropStyle = computed(() => ({
 }));
 
 onMounted(() => {
-  frameId = window.requestAnimationFrame(animatePointer);
   window.addEventListener("pointermove", updatePointer);
   window.addEventListener("pointerdown", createRipple);
   window.addEventListener("pointerleave", resetPointer);
@@ -313,7 +324,6 @@ onBeforeUnmount(() => {
       transparent 360deg
     );
   opacity: 0.62;
-  filter: blur(10px);
   transform: translate3d(calc(var(--drift-x) * 0.36px), calc(var(--drift-y) * 0.36px), 0);
 }
 
@@ -340,10 +350,14 @@ onBeforeUnmount(() => {
   height: 100%;
   object-fit: cover;
   opacity: 0.22;
-  transform: scale(1.08)
-    translate3d(calc(var(--drift-x) * -0.7px), calc(var(--drift-y) * -0.7px), 0);
+  transform: scale(1.04)
+    translate3d(calc(var(--drift-x) * -0.26px), calc(var(--drift-y) * -0.26px), 0);
   filter: saturate(0.9) contrast(1.08) brightness(0.64);
-  transition: transform 0.18s linear;
+  transition: transform 0.18s ease;
+  background:
+    radial-gradient(circle at 24% 24%, rgb(102 231 216 / 0.1), transparent 26%),
+    radial-gradient(circle at 76% 70%, rgb(245 185 113 / 0.08), transparent 28%),
+    #070b11;
 }
 
 .ambient-mesh {
@@ -413,7 +427,6 @@ onBeforeUnmount(() => {
   box-shadow:
     0 12px 32px rgb(0 0 0 / 0.24),
     inset 0 1px 0 rgb(255 255 255 / 0.1);
-  backdrop-filter: blur(18px);
   transform: translate3d(calc(var(--drift-x) * 0.32px), calc(var(--drift-y) * 0.32px), 0);
 }
 
@@ -434,9 +447,8 @@ onBeforeUnmount(() => {
 
 .ambient-copy-base,
 .ambient-copy-reveal {
+  display: none;
   padding: 5vh 4vw;
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 5vh 2vw;
   align-content: stretch;
   user-select: none;
@@ -649,14 +661,23 @@ onBeforeUnmount(() => {
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 900px) {
   .ambient-image {
     opacity: 0.18;
+    transform: none;
   }
 
   .ambient-rings,
   .ambient-streams {
     opacity: 0.65;
+  }
+
+  .ambient-copy-base,
+  .ambient-copy-reveal,
+  .ambient-links,
+  .ambient-streams,
+  .ambient-hud {
+    display: none;
   }
 
   .ambient-mesh {
@@ -665,31 +686,7 @@ onBeforeUnmount(() => {
       54px 54px,
       162px 162px,
       162px 162px;
-  }
-
-  .ambient-copy-base,
-  .ambient-copy-reveal {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 4vh 4vw;
-  }
-
-  .ambient-hud {
-    display: none;
-  }
-
-  .ambient-copy-reveal {
-    mask-image: radial-gradient(
-      160px circle at var(--pointer-x) var(--pointer-y),
-      rgb(0 0 0 / 0.96) 0,
-      rgb(0 0 0 / 0.96) 28%,
-      transparent 74%
-    );
-    -webkit-mask-image: radial-gradient(
-      160px circle at var(--pointer-x) var(--pointer-y),
-      rgb(0 0 0 / 0.96) 0,
-      rgb(0 0 0 / 0.96) 28%,
-      transparent 74%
-    );
+    transform: none;
   }
 }
 </style>

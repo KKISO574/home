@@ -13,13 +13,24 @@
               <span class="panel-kicker">Quote</span>
               <h3>今日摘录</h3>
             </div>
-            <button class="refresh-button" type="button" @click="$emit('refresh-quote')">
-              刷新
+            <button class="refresh-button" type="button" aria-label="刷新今日摘录" @click="$emit('refresh-quote')">
+              <span>刷新</span>
             </button>
           </div>
 
-          <p class="quote-text">{{ quote.text }}</p>
-          <p class="quote-from">- {{ quote.from }}</p>
+          <p class="quote-text">{{ quoteText }}</p>
+          <p class="quote-from">- {{ quoteFrom }}</p>
+
+          <div class="quote-dock">
+            <div>
+              <span>今日时间</span>
+              <strong>{{ timeLine }}</strong>
+            </div>
+            <div>
+              <span>站点状态</span>
+              <strong>{{ siteAge }}</strong>
+            </div>
+          </div>
 
           <div class="quote-meta">
             <span>{{ dateLine }}</span>
@@ -28,7 +39,7 @@
         </article>
 
         <div class="metrics-grid">
-          <article class="metric-tile main-tile">
+          <article class="metric-tile main-tile status-tile">
             <span class="metric-label">北京时间</span>
             <strong class="metric-value">{{ timeLine }}</strong>
             <p class="metric-copy">{{ dateLine }}</p>
@@ -63,13 +74,14 @@
 </template>
 
 <script setup>
+import { computed } from "vue";
 import { useSceneInteraction } from "@/composables/useSceneInteraction.js";
 
 const { setScene } = useSceneInteraction();
 
 defineEmits(["refresh-quote"]);
 
-defineProps({
+const props = defineProps({
   quote: {
     type: Object,
     required: true,
@@ -95,6 +107,9 @@ defineProps({
     required: true,
   },
 });
+
+const quoteText = computed(() => props.quote?.text || "今日摘录同步中。");
+const quoteFrom = computed(() => props.quote?.from || "未知来源");
 </script>
 
 <style lang="scss" scoped>
@@ -121,19 +136,18 @@ defineProps({
 
 .overview-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
   gap: 24px;
+  align-items: stretch;
 }
 
 .quote-panel,
 .metric-tile {
-  border-radius: 8px;
-  border: 1px solid rgb(255 255 255 / 0.1);
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.02)),
-    rgb(9 15 24 / 0.72);
-  box-shadow: 0 18px 48px rgb(0 0 0 / 0.28);
-  backdrop-filter: blur(18px);
+  border-radius: var(--radius-panel);
+  border: var(--panel-border);
+  background: var(--panel-bg);
+  box-shadow: var(--shadow-panel);
+  min-width: 0;
 }
 
 .quote-panel {
@@ -141,7 +155,7 @@ defineProps({
   padding: 28px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
 }
 
 .panel-head {
@@ -159,13 +173,27 @@ defineProps({
   border: 1px solid rgb(255 255 255 / 0.14);
   background: rgb(255 255 255 / 0.04);
   color: var(--text-soft);
+  transition:
+    transform var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    background-color var(--duration-fast) ease;
+}
+
+.refresh-button:hover,
+.refresh-button:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgb(102 231 216 / 0.36);
+  color: var(--text-main);
+  background: rgb(102 231 216 / 0.08);
 }
 
 .quote-text {
   margin: 34px 0 16px;
-  font-size: 1.7rem;
-  line-height: 1.45;
+  font-size: clamp(1.55rem, 2.2vw, 2.35rem);
+  line-height: 1.42;
   color: var(--text-main);
+  overflow-wrap: anywhere;
 }
 
 .quote-from {
@@ -173,8 +201,43 @@ defineProps({
   color: var(--accent-amber);
 }
 
+.quote-dock {
+  margin-top: auto;
+  padding-top: 34px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.quote-dock div {
+  min-height: 86px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background:
+    linear-gradient(135deg, rgb(102 231 216 / 0.08), rgb(255 255 255 / 0.025)),
+    rgb(255 255 255 / 0.025);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.quote-dock span {
+  color: var(--text-soft);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+}
+
+.quote-dock strong {
+  color: var(--text-main);
+  font-size: 1.02rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .quote-meta {
-  margin-top: 28px;
+  margin-top: 16px;
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
@@ -192,12 +255,18 @@ defineProps({
 }
 
 .metric-tile {
-  min-height: 148px;
+  min-height: 144px;
   padding: 18px;
 }
 
 .main-tile {
-  min-height: 164px;
+  min-height: 144px;
+}
+
+.status-tile {
+  background:
+    radial-gradient(circle at 88% 18%, rgb(102 231 216 / 0.1), transparent 28%),
+    var(--panel-bg);
 }
 
 .metric-label {
@@ -213,6 +282,8 @@ defineProps({
   display: block;
   font-size: 2rem;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
 .metric-copy {
@@ -220,6 +291,7 @@ defineProps({
   color: var(--text-soft);
   line-height: 1.7;
   font-size: 0.95rem;
+  overflow-wrap: anywhere;
 }
 
 .metric-copy.strong {
@@ -256,7 +328,7 @@ defineProps({
 
 .age-tile {
   grid-column: span 2;
-  min-height: auto;
+  min-height: 96px;
 }
 
 @media (max-width: 1080px) {
@@ -281,6 +353,21 @@ defineProps({
 
   .quote-text {
     font-size: 1.35rem;
+  }
+
+  .quote-dock {
+    grid-template-columns: 1fr;
+    padding-top: 24px;
+  }
+
+  .quote-panel,
+  .metric-tile {
+    padding: 20px;
+  }
+
+  .panel-head {
+    align-items: flex-start;
+    gap: 12px;
   }
 }
 </style>

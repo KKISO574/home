@@ -98,13 +98,11 @@ defineProps({
 <style lang="scss" scoped>
 .social-panel {
   padding: 24px;
-  border-radius: 8px;
-  border: 1px solid rgb(255 255 255 / 0.1);
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.02)),
-    rgb(8 13 22 / 0.72);
-  box-shadow: 0 18px 48px rgb(0 0 0 / 0.24);
-  backdrop-filter: blur(18px);
+  border-radius: var(--radius-panel);
+  border: var(--panel-border);
+  background: var(--panel-bg);
+  box-shadow: var(--shadow-panel);
+  min-width: 0;
 }
 
 .identity-block {
@@ -140,6 +138,7 @@ defineProps({
   margin: 18px 0 0;
   color: var(--text-soft);
   line-height: 1.75;
+  overflow-wrap: anywhere;
 }
 
 .identity-meta {
@@ -184,6 +183,7 @@ defineProps({
   grid-template-columns: 40px minmax(0, 1fr) auto;
   gap: 14px;
   align-items: center;
+  min-width: 0;
 }
 
 .social-tile:hover,
@@ -214,14 +214,19 @@ defineProps({
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 
   strong {
     font-size: 1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   span {
     color: var(--text-soft);
     line-height: 1.5;
+    overflow-wrap: anywhere;
   }
 }
 
@@ -244,6 +249,16 @@ defineProps({
 
   .identity-meta {
     grid-template-columns: 1fr;
+  }
+
+  .social-tile {
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    padding: 13px 14px;
+  }
+
+  .social-icon {
+    width: 36px;
+    height: 36px;
   }
 }
 </style>
